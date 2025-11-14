@@ -1,0 +1,406 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  color: #333;
+}
+
+.app {
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.app-loading,
+.app-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: white;
+  font-size: 24px;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  margin-bottom: 30px;
+}
+
+.app-header h1 {
+  color: white;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.wallet-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wallet-address {
+  color: white;
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+.btn-connect,
+.btn-disconnect,
+.btn-bet,
+.btn-claim {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-connect {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-connect:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.btn-disconnect {
+  background: #f44336;
+  color: white;
+}
+
+.btn-disconnect:hover {
+  background: #da190b;
+}
+
+.btn-bet {
+  background: #2196f3;
+  color: white;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.btn-bet:hover:not(:disabled) {
+  background: #0b7dda;
+}
+
+.btn-claim {
+  background: #ff9800;
+  color: white;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.btn-claim:hover:not(:disabled) {
+  background: #f57c00;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.game-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.game-timer {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 24px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.timer-phase {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.timer-time {
+  font-size: 48px;
+  font-weight: bold;
+  font-family: monospace;
+  margin-bottom: 12px;
+}
+
+.timer-progress {
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.timer-progress-bar {
+  height: 100%;
+  transition: width 1s linear;
+}
+
+.race-track-container {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 30px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.race-track {
+  position: relative;
+  background: linear-gradient(to right, #4caf50, #8bc34a);
+  border-radius: 12px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 4px solid #2e7d32;
+}
+
+.track-lane {
+  position: absolute;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.3);
+  left: 0;
+}
+
+.finish-line {
+  position: absolute;
+  width: 4px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #000 0px,
+    #000 20px,
+    #fff 20px,
+    #fff 40px
+  );
+  z-index: 10;
+}
+
+.finish-line-flag {
+  position: absolute;
+  left: 10px;
+  top: 20px;
+  font-size: 32px;
+}
+
+.horse {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: left 0.5s ease-out;
+  z-index: 5;
+}
+
+.horse.winner {
+  animation: pulse 1s infinite;
+  border: 3px solid gold;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.horse-emoji {
+  font-size: 24px;
+}
+
+.horse-name {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.winner-crown {
+  position: absolute;
+  top: -20px;
+  font-size: 24px;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.position-indicators {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+}
+
+.position-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.game-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.betting-panel,
+.winnings-panel {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.betting-panel h3,
+.winnings-panel h3 {
+  margin-bottom: 20px;
+  font-size: 20px;
+  color: #333;
+}
+
+.betting-warning {
+  padding: 12px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  color: #856404;
+}
+
+.horse-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.horse-option {
+  padding: 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.horse-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.horse-option.selected {
+  border-width: 3px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.horse-option-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.horse-option-stats {
+  font-size: 14px;
+  color: #666;
+}
+
+.bet-input {
+  margin-top: 20px;
+}
+
+.bet-input label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.bet-input input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.bet-input input:focus {
+  outline: none;
+  border-color: #2196f3;
+}
+
+.winnings-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.winnings-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+}
+
+.winnings-item.highlight {
+  background: rgba(255, 152, 0, 0.1);
+  border: 2px solid #ff9800;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .game-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .race-track {
+    width: 100% !important;
+  }
+
+  .app-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+

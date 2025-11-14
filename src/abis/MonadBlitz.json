@@ -1,0 +1,17 @@
+[
+  "function placeBet(uint8 horseId) external payable",
+  "function updatePositions() external",
+  "function settleRound() external",
+  "function claimWinnings(uint256 roundId) external",
+  "function getCurrentRound() external view returns (uint256 roundId, uint256 startTime, uint8 phase, uint8 winner, bool settled)",
+  "function getPositions() external view returns (uint256[4] memory)",
+  "function getTotalBets() external view returns (uint256[4] memory)",
+  "function getUserBets(uint256 roundId, address user) external view returns (tuple(address bettor, uint8 horseId, uint256 amount, bool claimed)[] memory)",
+  "function getUserWinnings(uint256 roundId, address user) external view returns (uint256)",
+  "event RoundStarted(uint256 indexed roundId, uint256 startTime)",
+  "event BetPlaced(uint256 indexed roundId, address indexed bettor, uint8 horseId, uint256 amount)",
+  "event PositionUpdated(uint256 indexed roundId, uint8 horseId, uint256 position)",
+  "event RoundSettled(uint256 indexed roundId, uint8 winner)",
+  "event WinningsClaimed(uint256 indexed roundId, address indexed bettor, uint256 amount)"
+]
+
