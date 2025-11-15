@@ -19,7 +19,16 @@ const MonadBlitzABI = require('../src/abis/MonadBlitz.json');
 
 // 설정
 const RPC_URL = process.env.RPC_URL || 'https://testnet-rpc.monad.xyz';
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0x0262E2AcFCC2f27786317407477773D32510a644';
+// 컨트랙트 주소 확인 (42자여야 함)
+let contractAddress = process.env.CONTRACT_ADDRESS || '0xEb90220146fd41F39c0081ec42b982d783a5107d';
+if (contractAddress.length !== 42) {
+  console.error(`❌ 컨트랙트 주소가 잘못되었습니다! (길이: ${contractAddress.length}, 정상: 42)`);
+  console.error(`   현재 주소: ${contractAddress}`);
+  // 올바른 주소로 수정
+  contractAddress = '0xEb90220146fd41F39c0081ec42b982d783a5107d';
+  console.log(`   수정된 주소: ${contractAddress}`);
+}
+const CONTRACT_ADDRESS = contractAddress;
 const SERVER_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY; // 서버 지갑의 개인키 (가스비 충전 필요)
 
 // 게임 상수
@@ -39,13 +48,57 @@ if (!SERVER_PRIVATE_KEY) {
   process.exit(1);
 }
 
-const provider = new ethers.JsonRpcProvider(RPC_URL);
+// Provider 설정 (Monad 네트워크 정보 명시하여 ENS 오류 방지)
+const provider = new ethers.JsonRpcProvider(RPC_URL, {
+  name: "monad",
+  chainId: 10143,
+  ensAddress: null, // ENS 주소를 null로 설정하여 ENS 체크 비활성화
+});
+
+// ENS 체크를 완전히 비활성화하기 위해 네트워크 조회 함수 오버라이드
+const originalGetNetwork = provider.getNetwork.bind(provider);
+provider.getNetwork = async function() {
+  try {
+    return await originalGetNetwork();
+  } catch (error) {
+    // ENS 오류가 발생하면 네트워크 정보를 직접 반환
+    if (error.code === 'UNSUPPORTED_OPERATION' || error.message?.includes('ENS')) {
+      return {
+        name: "monad",
+        chainId: 10143n,
+        ensAddress: null,
+      };
+    }
+    throw error;
+  }
+};
+
 const signer = new ethers.Wallet(SERVER_PRIVATE_KEY, provider);
 const contract = new ethers.Contract(CONTRACT_ADDRESS, MonadBlitzABI, signer);
 
 console.log('🚀 Monad Blitz 게임 서버 시작');
 console.log('📍 컨트랙트 주소:', CONTRACT_ADDRESS);
+console.log('   주소 길이:', CONTRACT_ADDRESS.length, '(정상: 42)');
 console.log('👤 서버 지갑 주소:', signer.address);
+console.log('🌐 RPC URL:', RPC_URL);
+
+// 컨트랙트 연결 테스트
+(async () => {
+  try {
+    console.log('\n🔍 컨트랙트 연결 테스트 중...');
+    const testRound = await contract.getCurrentRound();
+    console.log('   ✅ 컨트랙트 연결 성공!');
+    console.log('   라운드 ID:', testRound[0].toString());
+    console.log('   시작 시간:', new Date(Number(testRound[1]) * 1000).toLocaleString());
+  } catch (error) {
+    console.error('   ❌ 컨트랙트 연결 실패!');
+    console.error('   오류:', error.message || error);
+    console.error('   코드:', error.code);
+    if (error.info) {
+      console.error('   정보:', JSON.stringify(error.info, null, 2));
+    }
+  }
+})();
 
 // 잔액 확인
 async function checkBalance() {
@@ -66,6 +119,10 @@ async function checkBalance() {
 async function getCurrentRound() {
   try {
     const roundInfo = await contract.getCurrentRound();
+    if (!roundInfo || roundInfo.length === 0) {
+      console.error('   ⚠️  라운드 정보가 비어있습니다.');
+      return null;
+    }
     return {
       roundId: roundInfo[0],
       startTime: Number(roundInfo[1]),
@@ -74,7 +131,27 @@ async function getCurrentRound() {
       settled: roundInfo[4],
     };
   } catch (error) {
-    console.error('라운드 정보 조회 실패:', error.message);
+    // 실제 오류 메시지 출력
+    const errorMsg = error.message || error.reason || String(error);
+    const errorCode = error.code || '';
+    
+    // 모든 오류를 로그로 출력 (디버깅용)
+    console.error('   ❌ 라운드 정보 조회 실패:');
+    console.error('      메시지:', errorMsg);
+    console.error('      코드:', errorCode);
+    if (error.data) {
+      console.error('      데이터:', error.data);
+    }
+    if (error.info) {
+      console.error('      정보:', error.info);
+    }
+    
+    // ENS 관련 오류는 무시하되 로그는 출력
+    if (errorMsg.includes('ENS') || errorCode === 'UNSUPPORTED_OPERATION') {
+      console.log('      → ENS 오류로 무시됨');
+      return null;
+    }
+    
     return null;
   }
 }
@@ -205,16 +282,19 @@ async function executeStartNewRound() {
 async function monitorGameState() {
   try {
     const roundInfo = await getCurrentRound();
-    if (!roundInfo) return;
+    if (!roundInfo) {
+      console.log(`   ⚠️  라운드 정보를 가져올 수 없습니다.`);
+      return;
+    }
     
     const now = Math.floor(Date.now() / 1000);
     const elapsed = now - roundInfo.startTime;
     const phase = calculatePhase(elapsed, roundInfo.settled);
     const timeRemaining = elapsed >= ROUND_DURATION ? 0 : Math.max(0, ROUND_DURATION - elapsed);
     
-    // 게임 상태 출력 (선택사항)
-    if (elapsed % 10 === 0) { // 10초마다 출력
-      console.log(`\n[${new Date().toLocaleTimeString()}] 게임 상태:`);
+    // 상세 게임 상태 출력 (30초마다)
+    if (elapsed % 30 === 0 && elapsed > 0) {
+      console.log(`\n[${new Date().toLocaleTimeString()}] 📋 상세 게임 상태:`);
       console.log(`  라운드 ID: ${roundInfo.roundId}`);
       console.log(`  Phase: ${phase}`);
       console.log(`  경과 시간: ${elapsed}s / ${ROUND_DURATION}s`);
@@ -225,7 +305,7 @@ async function monitorGameState() {
       }
     }
   } catch (error) {
-    console.error('게임 상태 모니터링 실패:', error.message);
+    console.error(`   ❌ 게임 상태 모니터링 실패:`, error.message);
   }
 }
 
@@ -293,11 +373,39 @@ async function main() {
   console.log(`⏰ 자동 실행 시작 (${CHECK_INTERVAL / 1000}초마다 체크)`);
   console.log(`   - updatePositions: Racing Phase 중 ${UPDATE_POSITIONS_INTERVAL / 1000}초마다\n`);
   
+  let checkCount = 0;
   setInterval(async () => {
-    await executeUpdatePositions();
-    await executeSettleRound();
-    await executeStartNewRound();
-    await monitorGameState();
+    checkCount++;
+    const timestamp = new Date().toLocaleTimeString();
+    
+    // 5초마다 하트비트 로그
+    console.log(`\n[${timestamp}] ♥ 하트비트 #${checkCount} - 서버 정상 작동 중...`);
+    
+    try {
+      // 먼저 라운드 정보 확인
+      const roundInfo = await getCurrentRound();
+      if (!roundInfo) {
+        console.log(`   ⚠️  라운드 정보를 가져올 수 없습니다. 컨트랙트 연결을 확인하세요.`);
+        return;
+      }
+      
+      // 간단한 상태 요약 (5초마다)
+      const now = Math.floor(Date.now() / 1000);
+      const elapsed = now - roundInfo.startTime;
+      const phase = calculatePhase(elapsed, roundInfo.settled);
+      console.log(`   📊 상태: 라운드 ${roundInfo.roundId} | ${phase} | 경과 ${elapsed}s`);
+      
+      // 각 함수 실행
+      await executeUpdatePositions();
+      await executeSettleRound();
+      await executeStartNewRound();
+      await monitorGameState();
+    } catch (error) {
+      console.error(`   ❌ 체크 중 오류:`, error.message || error);
+      if (error.stack) {
+        console.error(`   스택:`, error.stack);
+      }
+    }
   }, CHECK_INTERVAL);
   
   // 주기적으로 잔액 확인 (5분마다)
