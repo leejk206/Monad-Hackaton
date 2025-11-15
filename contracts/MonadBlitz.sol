@@ -118,7 +118,9 @@ contract MonadBlitz is AutomationCompatibleInterface {
         Round storage round = rounds[currentRoundId];
         uint256 elapsed = block.timestamp - round.startTime;
         
-        require(elapsed >= RACING_PHASE_START, "Racing phase not started");
+        // Betting Phase에서도 실행 가능하도록 수정 (elapsed >= RACING_PHASE_START 조건 제거)
+        // 단, 라운드가 시작된 후에만 실행 가능
+        require(elapsed > 0, "Round not started");
         require(elapsed < RACING_PHASE_END || round.phase == Phase.Racing, "Racing phase ended");
         
         if (round.phase == Phase.Betting) {

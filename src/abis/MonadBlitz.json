@@ -2,6 +2,7 @@
   "function placeBet(uint8 horseId) external payable",
   "function updatePositions() external",
   "function settleRound() external",
+  "function startNewRound() external",
   "function claimWinnings(uint256 roundId) external",
   "function getCurrentRound() external view returns (uint256 roundId, uint256 startTime, uint8 phase, uint8 winner, bool settled)",
   "function getPositions() external view returns (uint256[4] memory)",

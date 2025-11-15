@@ -19,7 +19,7 @@ const MonadBlitzABI = require('../src/abis/MonadBlitz.json');
 
 // 설정
 const RPC_URL = process.env.RPC_URL || 'https://testnet-rpc.monad.xyz';
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0x4e1a649aE9ed9d22D97122eEd54272c361Ed8092';
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0x9a607c5c2A4cD964540cee13E01A9217A791A639';
 const SERVER_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY; // 서버 지갑의 개인키 (가스비 충전 필요)
 
 // 게임 상수
@@ -110,9 +110,12 @@ async function executeUpdatePositions() {
     
     const elapsed = now - roundInfo.startTime;
     const phase = calculatePhase(elapsed, roundInfo.settled);
+    const contractPhase = Number(roundInfo[2]); // 컨트랙트의 실제 phase
     
-    if (phase === 'Racing' && !roundInfo.settled) {
-      console.log(`[${new Date().toLocaleTimeString()}] 🏃 updatePositions 호출 (elapsed: ${elapsed}s)`);
+    // 컨트랙트 조건: elapsed > 0 && elapsed < RACING_PHASE_END (80초)
+    // Betting Phase에서도 실행 가능 (컨트랙트가 자동으로 Racing Phase로 전환)
+    if (elapsed > 0 && elapsed < RACING_PHASE_END && !roundInfo.settled) {
+      console.log(`[${new Date().toLocaleTimeString()}] 🏃 updatePositions 호출 (elapsed: ${elapsed}s, contractPhase: ${contractPhase})`);
       const tx = await contract.updatePositions();
       console.log(`  ✅ 트랜잭션 전송: ${tx.hash}`);
       
@@ -124,6 +127,15 @@ async function executeUpdatePositions() {
       });
       
       lastUpdateTime = now;
+    } else {
+      // 실행 조건이 맞지 않을 때 디버그 정보 출력
+      if (elapsed < RACING_PHASE_START) {
+        // console.log(`[${new Date().toLocaleTimeString()}] ⏸️  Racing Phase 시작 전 (elapsed: ${elapsed}s < ${RACING_PHASE_START}s)`);
+      } else if (elapsed >= RACING_PHASE_END) {
+        // console.log(`[${new Date().toLocaleTimeString()}] ⏸️  Racing Phase 종료 (elapsed: ${elapsed}s >= ${RACING_PHASE_END}s)`);
+      } else if (roundInfo.settled) {
+        // console.log(`[${new Date().toLocaleTimeString()}] ⏸️  이미 정산됨`);
+      }
     }
   } catch (error) {
     console.error('updatePositions 실행 실패:', error.message);
@@ -140,7 +152,8 @@ async function executeSettleRound() {
     const elapsed = now - roundInfo.startTime;
     const phase = calculatePhase(elapsed, roundInfo.settled);
     
-    if ((phase === 'Settlement' || phase === 'Finished') && !roundInfo.settled && elapsed >= RACING_PHASE_END) {
+    // settleRound는 Racing Phase가 끝났고, 아직 정산되지 않았을 때만 호출
+    if (elapsed >= RACING_PHASE_END && !roundInfo.settled && roundInfo.phase === 1) { // phase 1 = Racing
       console.log(`[${new Date().toLocaleTimeString()}] 💰 settleRound 호출 (elapsed: ${elapsed}s)`);
       const tx = await contract.settleRound();
       console.log(`  ✅ 트랜잭션 전송: ${tx.hash}`);
@@ -152,7 +165,10 @@ async function executeSettleRound() {
       });
     }
   } catch (error) {
-    console.error('settleRound 실행 실패:', error.message);
+    // "Not in racing phase" 오류는 무시 (이미 정산되었거나 조건이 맞지 않음)
+    if (!error.message?.includes('Not in racing phase')) {
+      console.error('settleRound 실행 실패:', error.message);
+    }
   }
 }
 
@@ -164,9 +180,9 @@ async function executeStartNewRound() {
     
     const now = Math.floor(Date.now() / 1000);
     const elapsed = now - roundInfo.startTime;
-    const phase = calculatePhase(elapsed, roundInfo.settled);
     
-    if (phase === 'Finished' && roundInfo.settled && elapsed >= ROUND_DURATION) {
+    // 라운드가 끝났고 정산되었을 때만 새 라운드 시작
+    if (elapsed >= ROUND_DURATION && roundInfo.settled) {
       console.log(`[${new Date().toLocaleTimeString()}] 🎮 startNewRound 호출 (elapsed: ${elapsed}s)`);
       const tx = await contract.startNewRound();
       console.log(`  ✅ 트랜잭션 전송: ${tx.hash}`);
@@ -178,7 +194,10 @@ async function executeStartNewRound() {
       });
     }
   } catch (error) {
-    console.error('startNewRound 실행 실패:', error.message);
+    // 일반적인 오류만 로그 (이미 새 라운드가 시작되었거나 조건이 맞지 않음)
+    if (!error.message?.includes('Current round not finished')) {
+      console.error('startNewRound 실행 실패:', error.message);
+    }
   }
 }
 
@@ -210,38 +229,53 @@ async function monitorGameState() {
   }
 }
 
-// 이벤트 리스너 설정
+// 이벤트 리스너 설정 (Monad RPC가 eth_newFilter를 지원하지 않으므로 비활성화)
 function setupEventListeners() {
-  console.log('👂 이벤트 리스너 설정 중...');
+  console.log('👂 이벤트 리스너: Monad RPC가 eth_newFilter를 지원하지 않아 비활성화됨');
+  console.log('   게임 상태는 주기적 폴링으로 모니터링됩니다.');
   
-  contract.on('RoundStarted', (roundId, startTime, event) => {
-    console.log(`\n🎮 새 라운드 시작!`);
-    console.log(`  라운드 ID: ${roundId}`);
-    console.log(`  시작 시간: ${new Date(Number(startTime) * 1000).toLocaleString()}`);
-  });
-  
-  contract.on('PositionUpdated', (roundId, horseId, position, event) => {
-    const horseNames = ['BTC', 'ETH', 'MONAD', 'DOGE'];
-    console.log(`  🏃 ${horseNames[horseId]} 위치 업데이트: ${position}`);
-  });
-  
-  contract.on('RoundSettled', (roundId, winner, event) => {
-    const horseNames = ['BTC', 'ETH', 'MONAD', 'DOGE'];
-    console.log(`\n🏁 라운드 정산 완료!`);
-    console.log(`  라운드 ID: ${roundId}`);
-    console.log(`  승자: ${horseNames[winner]}`);
-  });
-  
-  contract.on('BetPlaced', (roundId, bettor, horseId, amount, event) => {
-    const horseNames = ['BTC', 'ETH', 'MONAD', 'DOGE'];
-    console.log(`  💰 베팅: ${bettor.slice(0, 10)}... → ${horseNames[horseId]} (${ethers.formatEther(amount)} MONAD)`);
-  });
-  
-  contract.on('WinningsClaimed', (roundId, bettor, amount, event) => {
-    console.log(`  💵 수령: ${bettor.slice(0, 10)}... → ${ethers.formatEther(amount)} MONAD`);
-  });
-  
-  console.log('✅ 이벤트 리스너 설정 완료');
+  // 이벤트 리스너는 Monad RPC가 eth_newFilter를 지원하지 않으므로 사용하지 않음
+  // 대신 주기적으로 게임 상태를 조회하여 모니터링합니다
+}
+
+// 서버 시작 시 새 라운드 확인 및 시작
+async function ensureNewRound() {
+  try {
+    const roundInfo = await getCurrentRound();
+    if (!roundInfo) return;
+    
+    const now = Math.floor(Date.now() / 1000);
+    const elapsed = now - roundInfo.startTime;
+    
+    // 라운드가 90초 이상 지났거나, 베팅 단계가 끝났는데도 계속 Betting Phase인 경우 새 라운드 시작
+    if (elapsed >= ROUND_DURATION || (elapsed > BETTING_PHASE_END && Number(roundInfo[2]) === 0)) {
+      console.log(`\n🔄 서버 시작 시 라운드 상태 확인:`);
+      console.log(`   라운드 ID: ${roundInfo[0]}`);
+      console.log(`   경과 시간: ${elapsed}초`);
+      console.log(`   Phase: ${['Betting', 'Racing', 'Settlement', 'Finished'][Number(roundInfo[2])]}`);
+      
+      if (elapsed >= ROUND_DURATION) {
+        console.log(`   → 라운드가 ${ROUND_DURATION}초를 초과했으므로 새 라운드 시작...`);
+      } else {
+        console.log(`   → 베팅 단계가 끝났는데도 Betting Phase이므로 새 라운드 시작...`);
+      }
+      
+      const tx = await contract.startNewRound();
+      console.log(`   ✅ 트랜잭션 전송: ${tx.hash}`);
+      
+      const receipt = await tx.wait();
+      console.log(`   ✅ 확인됨! 블록: ${receipt.blockNumber}`);
+      
+      // 새 라운드 정보 확인
+      const newRoundInfo = await getCurrentRound();
+      console.log(`   새 라운드 ID: ${newRoundInfo[0]}`);
+      console.log(`   새 라운드 시작 시간: ${new Date(Number(newRoundInfo[1]) * 1000).toLocaleString()}\n`);
+    } else {
+      console.log(`\n✅ 현재 라운드 정상 (라운드 ID: ${roundInfo[0]}, 경과: ${elapsed}초)\n`);
+    }
+  } catch (error) {
+    console.warn('⚠️  새 라운드 확인 중 오류 (계속 진행):', error.message);
+  }
 }
 
 // 메인 루프
@@ -249,11 +283,14 @@ async function main() {
   // 초기 잔액 확인
   await checkBalance();
   
+  // 서버 시작 시 새 라운드 확인 및 시작
+  await ensureNewRound();
+  
   // 이벤트 리스너 설정
   setupEventListeners();
   
   // 주기적으로 체크 및 실행
-  console.log(`\n⏰ 자동 실행 시작 (${CHECK_INTERVAL / 1000}초마다 체크)`);
+  console.log(`⏰ 자동 실행 시작 (${CHECK_INTERVAL / 1000}초마다 체크)`);
   console.log(`   - updatePositions: Racing Phase 중 ${UPDATE_POSITIONS_INTERVAL / 1000}초마다\n`);
   
   setInterval(async () => {
