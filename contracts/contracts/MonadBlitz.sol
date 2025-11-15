@@ -23,7 +23,7 @@ contract MonadBlitz is AutomationCompatibleInterface {
     uint256 public constant MAX_BET_AMOUNT = 10 ether; // TODO: 튜닝 가능
     
     // SPEED_FORMULA_TODO: 속도 결정식 상수들 - 튜닝 가능하게 분리
-    int256 public constant BASE_SPEED = 250; // 기본 속도 (units per second) - 절반으로 감소
+    int256 public constant BASE_SPEED = 83; // 기본 속도 (units per second) - 3배로 감소 (250/3 ≈ 83)
     int256 public constant SPEED_MULTIPLIER = 50000; // 가격 변화율에 대한 속도 배수
     
     // ============ Enums ============
@@ -126,20 +126,10 @@ contract MonadBlitz is AutomationCompatibleInterface {
             round.phase = Phase.Racing;
         }
         
-        // Check if any horse has reached finish line
-        bool finished = false;
-        for (uint8 i = 0; i < 4; i++) {
-            if (round.positions[i] >= FINISH_POS && !finished) {
-                round.winner = i;
-                round.phase = Phase.Settlement;
-                round.settled = true;
-                finished = true;
-                emit RoundSettled(currentRoundId, i);
-                break;
-            }
-        }
+        // 100m 도달 시 자동 종료 기능 제거 - RACING_PHASE_END 시간에만 정산
         
-        if (!finished) {
+        // Update positions based on price changes and time elapsed
+        {
             // 마지막 업데이트 시간 계산 (첫 업데이트면 RACING_PHASE_START 시점부터)
             uint256 lastUpdate = round.lastUpdateTime;
             if (lastUpdate == 0) {
@@ -178,8 +168,8 @@ contract MonadBlitz is AutomationCompatibleInterface {
             // 마지막 업데이트 시간 저장
             round.lastUpdateTime = currentTime;
             
-            // Check if racing phase ended without winner
-            if (elapsed >= RACING_PHASE_END && !finished) {
+            // Check if racing phase ended
+            if (elapsed >= RACING_PHASE_END) {
                 _settleRound();
             }
         }
@@ -374,8 +364,8 @@ contract MonadBlitz is AutomationCompatibleInterface {
         
         if (round.settled) return;
         
-        // If no horse reached finish line, winner is the one with highest position
-        if (round.winner == 0 && round.positions[0] < FINISH_POS) {
+        // Winner is the one with highest position (100m 도달 체크 제거)
+        if (round.winner == 0) {
             uint256 maxPos = 0;
             uint8 winnerId = 0;
             
@@ -497,44 +487,49 @@ contract MonadBlitz is AutomationCompatibleInterface {
                 round.phase = Phase.Racing;
             }
             
-            // Check if any horse has reached finish line
-            bool finished = false;
-            for (uint8 i = 0; i < 4; i++) {
-                if (round.positions[i] >= FINISH_POS && !finished) {
-                    round.winner = i;
-                    round.phase = Phase.Settlement;
-                    round.settled = true;
-                    finished = true;
-                    emit RoundSettled(currentRoundId, i);
-                    break;
-                }
+            // 100m 도달 시 자동 종료 기능 제거 - RACING_PHASE_END 시간에만 정산
+            
+            // 마지막 업데이트 시간 계산 (첫 업데이트면 RACING_PHASE_START 시점부터)
+            uint256 lastUpdate = round.lastUpdateTime;
+            if (lastUpdate == 0) {
+                // 첫 업데이트: RACING_PHASE_START 시점부터 계산
+                lastUpdate = round.startTime + RACING_PHASE_START;
             }
             
-            if (!finished) {
-                // Update positions based on price changes
-                for (uint8 i = 0; i < 4; i++) {
-                    int256 currentPrice = _getLatestPrice(i);
-                    int256 speed = _computeSpeed(i, currentPrice, round.lastPrices[i]);
-                    
-                    if (speed > 0) {
-                        round.positions[i] += uint256(speed);
+            // 경과 시간 계산 (초 단위)
+            uint256 currentTime = block.timestamp;
+            uint256 timeDelta = currentTime - lastUpdate;
+            
+            // Update positions based on price changes and time elapsed
+            for (uint8 i = 0; i < 4; i++) {
+                int256 currentPrice = _getLatestPrice(i);
+                int256 speed = _computeSpeed(i, currentPrice, round.lastPrices[i]);
+                
+                // 속도는 초당 단위이므로, 경과 시간(초)을 곱하여 실제 이동량 계산
+                int256 movement = speed * int256(timeDelta);
+                
+                // Update position (movement can be negative, but position can't go below START_POS)
+                if (movement > 0) {
+                    round.positions[i] += uint256(movement);
+                } else {
+                    int256 newPos = int256(round.positions[i]) + movement;
+                    if (newPos < int256(START_POS)) {
+                        round.positions[i] = START_POS;
                     } else {
-                        int256 newPos = int256(round.positions[i]) + speed;
-                        if (newPos < int256(START_POS)) {
-                            round.positions[i] = START_POS;
-                        } else {
-                            round.positions[i] = uint256(newPos);
-                        }
+                        round.positions[i] = uint256(newPos);
                     }
-                    
-                    round.lastPrices[i] = currentPrice;
-                    emit PositionUpdated(currentRoundId, i, round.positions[i]);
                 }
                 
-                // Check if racing phase ended without winner
-                if (elapsed >= RACING_PHASE_END && !finished) {
-                    _settleRound();
-                }
+                round.lastPrices[i] = currentPrice;
+                emit PositionUpdated(currentRoundId, i, round.positions[i]);
+            }
+            
+            // 마지막 업데이트 시간 저장
+            round.lastUpdateTime = currentTime;
+            
+            // Check if racing phase ended
+            if (elapsed >= RACING_PHASE_END) {
+                _settleRound();
             }
         }
         // Settle round if needed
