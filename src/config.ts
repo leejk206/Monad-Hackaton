@@ -1,7 +1,7 @@
 // Monad Blitz Configuration
 
 // TODO: 배포 후 실제 컨트랙트 주소로 변경
-export const CONTRACT_ADDRESS = "0xf6957A52368ebD94954c9b2aca6E21A8514F37C8";
+export const CONTRACT_ADDRESS = "0x8a7fbc99a90A98c11E46391C73032229ecc7528b";
 
 // Monad 네트워크 설정
 export const MONAD_NETWORK = {

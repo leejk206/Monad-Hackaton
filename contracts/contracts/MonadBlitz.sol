@@ -23,8 +23,8 @@ contract MonadBlitz is AutomationCompatibleInterface {
     uint256 public constant MAX_BET_AMOUNT = 10 ether; // TODO: 튜닝 가능
     
     // SPEED_FORMULA_TODO: 속도 결정식 상수들 - 튜닝 가능하게 분리
-    int256 public constant BASE_SPEED = 100; // 기본 속도 (units per second)
-    int256 public constant SPEED_MULTIPLIER = 500000; // 가격 변화율에 대한 속도 배수 (500000배, 기존의 100배)
+    int256 public constant BASE_SPEED = 500; // 기본 속도 (units per second)
+    int256 public constant SPEED_MULTIPLIER = 50000; // 가격 변화율에 대한 속도 배수 (500000배, 기존의 100배)
     
     // ============ Enums ============
     enum Phase { Betting, Racing, Settlement, Finished }
@@ -123,7 +123,18 @@ contract MonadBlitz is AutomationCompatibleInterface {
         require(elapsed > 0, "Round not started");
         require(elapsed < RACING_PHASE_END || round.phase == Phase.Racing, "Racing phase ended");
         
+        // 베팅 단계에서는 위치를 업데이트하지 않음 (가격만 업데이트)
         if (round.phase == Phase.Betting) {
+            // 베팅 단계에서는 가격만 업데이트하고 위치는 업데이트하지 않음
+            for (uint8 i = 0; i < 4; i++) {
+                int256 currentPrice = _getLatestPrice(i);
+                round.lastPrices[i] = currentPrice;
+            }
+            return; // 베팅 단계에서는 위치 업데이트 없이 종료
+        }
+        
+        // Racing Phase로 전환 (elapsed >= RACING_PHASE_START일 때)
+        if (elapsed >= RACING_PHASE_START && round.phase == Phase.Betting) {
             round.phase = Phase.Racing;
         }
         
@@ -413,10 +424,10 @@ contract MonadBlitz is AutomationCompatibleInterface {
         }
         
         // Calculate price change in basis points 
-        int256 changeBps = ((currentPrice - lastPrice) * 10000) / lastPrice;
+        int256 changeBps = ((currentPrice - lastPrice) * 100000000) / lastPrice;
         
         // Speed formula: BASE_SPEED + changeBps * SPEED_MULTIPLIER
-        int256 speed = BASE_SPEED + (changeBps * SPEED_MULTIPLIER / 100);
+        int256 speed = BASE_SPEED + (changeBps * SPEED_MULTIPLIER / 1000000);
         
         // Minimum speed to prevent negative movement (can be adjusted)
         if (speed < -50) {

@@ -20,12 +20,12 @@ const MonadBlitzABI = require('../src/abis/MonadBlitz.json');
 // 설정
 const RPC_URL = process.env.RPC_URL || 'https://testnet-rpc.monad.xyz';
 // 컨트랙트 주소 확인 (42자여야 함)
-let contractAddress = process.env.CONTRACT_ADDRESS || '0xf6957A52368ebD94954c9b2aca6E21A8514F37C8';
+let contractAddress = process.env.CONTRACT_ADDRESS || '0x8a7fbc99a90A98c11E46391C73032229ecc7528b';
 if (contractAddress.length !== 42) {
   console.error(`❌ 컨트랙트 주소가 잘못되었습니다! (길이: ${contractAddress.length}, 정상: 42)`);
   console.error(`   현재 주소: ${contractAddress}`);
   // 올바른 주소로 수정
-  contractAddress = '0xf6957A52368ebD94954c9b2aca6E21A8514F37C8';
+  contractAddress = '0x8a7fbc99a90A98c11E46391C73032229ecc7528b';
   console.log(`   수정된 주소: ${contractAddress}`);
 }
 const CONTRACT_ADDRESS = contractAddress;
