@@ -1,18 +1,19 @@
 // Monad Blitz Configuration
 
 // TODO: 배포 후 실제 컨트랙트 주소로 변경
-export const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+export const CONTRACT_ADDRESS = "0x5E79909360086253cE3303B2C5f7805efB8080D9";
 
 // Monad 네트워크 설정
 export const MONAD_NETWORK = {
-  chainId: 0x1a4, // TODO: 실제 Monad 체인 ID로 변경
+  chainId: 0x279F, // 10143 (10진수) - Monad Testnet
   name: "Monad Testnet",
-  rpcUrl: "https://testnet-rpc.monad.xyz", // TODO: 실제 RPC URL로 변경
+  rpcUrl: "https://testnet-rpc.monad.xyz",
   nativeCurrency: {
     name: "Monad",
     symbol: "MONAD",
     decimals: 18,
   },
+  blockExplorerUrls: ["https://testnet.monadexplorer.com/"],
 };
 
 // 게임 상수
