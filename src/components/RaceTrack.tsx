@@ -9,14 +9,21 @@ interface RaceTrackProps {
 export function RaceTrack({ positions, winner }: RaceTrackProps) {
   const trackWidth = 800;
   const trackHeight = 400;
+  const horseWidth = 60; // 말의 너비
   // Finish line is at the end of the track
   const finishLineX = trackWidth;
 
   const getHorseX = (position: number) => {
-    // 위치를 300으로 제한
+    // 위치가 500을 넘어가면 안 보이도록 (경기장 크기는 500)
+    if (position > FINISH_POS) {
+      return -1000; // 화면 밖으로 이동
+    }
+    // 위치를 500으로 제한
     const clampedPosition = Math.min(position, FINISH_POS);
     const progress = (clampedPosition - START_POS) / (FINISH_POS - START_POS);
-    return Math.min(progress * trackWidth, trackWidth);
+    // 말의 너비를 고려하여 위치 계산 (말이 trackWidth를 넘어가지 않도록)
+    const maxX = trackWidth - horseWidth;
+    return Math.min(progress * trackWidth, maxX);
   };
 
   return (
@@ -35,8 +42,11 @@ export function RaceTrack({ positions, winner }: RaceTrackProps) {
 
         {/* Horses */}
         {HORSES.map((horse, index) => {
-          const x = getHorseX(positions[index] || START_POS);
+          const position = positions[index] || START_POS;
+          const x = getHorseX(position);
           const isWinner = winner !== undefined && winner === horse.id;
+          // 위치가 500을 넘어가면 숨김
+          const isVisible = position <= FINISH_POS;
 
           return (
             <div
@@ -46,6 +56,7 @@ export function RaceTrack({ positions, winner }: RaceTrackProps) {
                 left: `${x}px`,
                 top: `${60 + index * 80}px`,
                 backgroundColor: horse.color,
+                display: isVisible ? 'flex' : 'none',
               }}
             >
               <div className="horse-emoji">
@@ -76,7 +87,11 @@ export function RaceTrack({ positions, winner }: RaceTrackProps) {
       {/* Position indicators */}
       <div className="position-indicators">
         {HORSES.map((horse, index) => {
-          const position = Math.min(positions[index] || START_POS, FINISH_POS);
+          const position = positions[index] || START_POS;
+          // 위치가 500을 넘어가면 표시하지 않음
+          if (position > FINISH_POS) {
+            return null;
+          }
           return (
             <div key={horse.id} className="position-indicator">
               <span style={{ color: horse.color }}>{horse.symbol}</span>

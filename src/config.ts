@@ -1,7 +1,7 @@
 // Monad Blitz Configuration
 
 // 배포된 컨트랙트 주소
-export const CONTRACT_ADDRESS = "0xE60028f572D45912C655f03A260f81Ee0848c387";
+export const CONTRACT_ADDRESS = "0x4b918754F5F5bdC54897a63dc66BeC262e4ba181";
 
 // Monad 네트워크 설정
 export const MONAD_NETWORK = {
@@ -23,7 +23,7 @@ export const RACING_PHASE_START = 40; // seconds
 export const RACING_PHASE_END = 80; // seconds
 
 export const START_POS = 0;
-export const FINISH_POS = 300;
+export const FINISH_POS = 500;
 
 export const MIN_BET_AMOUNT = 0.001; // MONAD
 export const MAX_BET_AMOUNT = 10; // MONAD
