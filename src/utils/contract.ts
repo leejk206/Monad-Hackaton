@@ -121,6 +121,11 @@ export async function settleRound(contract: ethers.Contract) {
   return await tx.wait();
 }
 
+export async function startNewRound(contract: ethers.Contract) {
+  const tx = await contract.startNewRound();
+  return await tx.wait();
+}
+
 export async function claimWinnings(
   contract: ethers.Contract,
   roundId: bigint

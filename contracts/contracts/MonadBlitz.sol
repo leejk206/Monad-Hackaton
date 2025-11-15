@@ -434,7 +434,6 @@ contract MonadBlitz is AutomationCompatibleInterface {
     
     /**
      * @dev Chainlink Automation: Check if upkeep is needed
-     * @param checkData Data passed from Automation Registry
      * @return upkeepNeeded Whether upkeep is needed
      * @return performData Data to pass to performUpkeep
      */

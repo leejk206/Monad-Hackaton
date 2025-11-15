@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ethers } from "ethers";
-import { getContract, getCurrentRound, getPositions, getTotalBets, getUserBets, getUserWinnings, checkContractExists, isContractAddressValid, updatePositions, settleRound } from "../utils/contract";
+import { getContract, getCurrentRound, getPositions, getTotalBets, getUserBets, getUserWinnings, checkContractExists, isContractAddressValid, updatePositions, settleRound, startNewRound } from "../utils/contract";
 import { ROUND_DURATION, BETTING_PHASE_END, RACING_PHASE_START, RACING_PHASE_END } from "../config";
 import { Phase, GameState } from "../types";
 import { useWallet } from "./useWallet";
@@ -85,7 +85,8 @@ export function useGameState(provider: ethers.BrowserProvider | null, address: s
       // Calculate time remaining and phase
       const now = Math.floor(Date.now() / 1000);
       const elapsed = now - Number(roundInfo.startTime);
-      const timeRemaining = Math.max(0, ROUND_DURATION - elapsed);
+      // elapsed가 ROUND_DURATION을 넘어가면 0으로 설정 (새 라운드 대기)
+      const timeRemaining = elapsed >= ROUND_DURATION ? 0 : Math.max(0, ROUND_DURATION - elapsed);
 
       let currentPhase = Phase.Betting;
       if (elapsed > BETTING_PHASE_END) {
@@ -102,43 +103,75 @@ export function useGameState(provider: ethers.BrowserProvider | null, address: s
 
       // Racing Phase 중에는 자동으로 updatePositions 호출
       // 주의: 이는 트랜잭션이므로 가스가 필요합니다
-      if (currentPhase === Phase.Racing && signer && elapsed >= RACING_PHASE_START && elapsed < RACING_PHASE_END) {
-        // 5초마다 updatePositions 호출 (가스 비용 절감)
-        const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
-        if (timeSinceLastUpdate >= 5) {
-          try {
-            console.log(`[자동 실행] updatePositions 호출 시도 (elapsed: ${elapsed}s)`);
-            const contract = getContract(signer);
-            const tx = await contract.updatePositions();
-            console.log(`[자동 실행] updatePositions 트랜잭션 전송됨: ${tx.hash}`);
-            // 트랜잭션 완료를 기다리지 않음 (비동기 처리)
-            tx.wait().catch((err: any) => {
-              console.log(`[자동 실행] updatePositions 실패:`, err.message);
-            });
-            lastUpdateTimeRef.current = now;
-          } catch (err: any) {
-            // 이미 처리되었거나 가스 부족 등의 오류는 무시
-            if (!err.message?.includes("user rejected") && !err.message?.includes("insufficient funds")) {
-              console.log(`[자동 실행] updatePositions 오류:`, err.message);
+      console.log(`[디버그] Phase: ${currentPhase}, elapsed: ${elapsed}s, signer: ${signer ? '있음' : '없음'}`);
+      
+      if (currentPhase === Phase.Racing) {
+        console.log(`[디버그] Racing Phase 조건 체크: elapsed >= ${RACING_PHASE_START} && elapsed < ${RACING_PHASE_END}`);
+        if (signer && elapsed >= RACING_PHASE_START && elapsed < RACING_PHASE_END) {
+          // 5초마다 updatePositions 호출 (가스 비용 절감)
+          const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
+          console.log(`[디버그] 마지막 업데이트로부터 ${timeSinceLastUpdate}초 경과`);
+          if (timeSinceLastUpdate >= 5) {
+            try {
+              console.log(`[자동 실행] updatePositions 호출 시도 (elapsed: ${elapsed}s)`);
+              const contract = getContract(signer);
+              const tx = await contract.updatePositions();
+              console.log(`[자동 실행] updatePositions 트랜잭션 전송됨: ${tx.hash}`);
+              // 트랜잭션 완료를 기다리지 않음 (비동기 처리)
+              tx.wait().catch((err: any) => {
+                console.log(`[자동 실행] updatePositions 실패:`, err.message);
+              });
+              lastUpdateTimeRef.current = now;
+            } catch (err: any) {
+              // 모든 오류를 로그에 기록
+              console.error(`[자동 실행] updatePositions 오류:`, err);
+              if (!err.message?.includes("user rejected") && !err.message?.includes("insufficient funds")) {
+                console.log(`[자동 실행] updatePositions 상세 오류:`, err.message);
+              }
             }
           }
+        } else {
+          console.log(`[디버그] Racing Phase 조건 불만족: signer=${!!signer}, elapsed 조건=${elapsed >= RACING_PHASE_START && elapsed < RACING_PHASE_END}`);
         }
       }
 
       // Settlement Phase가 끝나면 settleRound 호출하여 새 라운드 시작
-      if (currentPhase === Phase.Settlement && elapsed >= ROUND_DURATION && signer && !roundInfo.settled) {
-        try {
-          console.log(`[자동 실행] settleRound 호출 시도 (elapsed: ${elapsed}s)`);
-          const contract = getContract(signer);
-          const tx = await contract.settleRound();
-          console.log(`[자동 실행] settleRound 트랜잭션 전송됨: ${tx.hash}`);
-          tx.wait().catch((err: any) => {
-            console.log(`[자동 실행] settleRound 실패:`, err.message);
-          });
-        } catch (err: any) {
-          if (!err.message?.includes("user rejected") && !err.message?.includes("insufficient funds")) {
-            console.log(`[자동 실행] settleRound 오류:`, err.message);
+      // 또는 Finished Phase에서도 settleRound를 호출하여 새 라운드 시작
+      if (currentPhase === Phase.Settlement || currentPhase === Phase.Finished) {
+        console.log(`[디버그] Settlement/Finished Phase 조건 체크: elapsed >= ${ROUND_DURATION}, signer=${!!signer}, settled=${roundInfo.settled}`);
+        if (elapsed >= ROUND_DURATION && signer && !roundInfo.settled) {
+          try {
+            console.log(`[자동 실행] settleRound 호출 시도 (elapsed: ${elapsed}s, phase: ${currentPhase})`);
+            const contract = getContract(signer);
+            const tx = await contract.settleRound();
+            console.log(`[자동 실행] settleRound 트랜잭션 전송됨: ${tx.hash}`);
+            tx.wait().catch((err: any) => {
+              console.log(`[자동 실행] settleRound 실패:`, err.message);
+            });
+          } catch (err: any) {
+            console.error(`[자동 실행] settleRound 오류:`, err);
+            if (!err.message?.includes("user rejected") && !err.message?.includes("insufficient funds")) {
+              console.log(`[자동 실행] settleRound 상세 오류:`, err.message);
+            }
           }
+        } else if (elapsed >= ROUND_DURATION && roundInfo.settled) {
+          // 이미 정산되었지만 새 라운드가 시작되지 않은 경우 - 강제로 새 라운드 시작
+          try {
+            console.log(`[자동 실행] startNewRound 호출 시도 (elapsed: ${elapsed}s, settled: ${roundInfo.settled})`);
+            const contract = getContract(signer);
+            const tx = await contract.startNewRound();
+            console.log(`[자동 실행] startNewRound 트랜잭션 전송됨: ${tx.hash}`);
+            tx.wait().catch((err: any) => {
+              console.log(`[자동 실행] startNewRound 실패:`, err.message);
+            });
+          } catch (err: any) {
+            console.error(`[자동 실행] startNewRound 오류:`, err);
+            if (!err.message?.includes("user rejected") && !err.message?.includes("insufficient funds")) {
+              console.log(`[자동 실행] startNewRound 상세 오류:`, err.message);
+            }
+          }
+        } else {
+          console.log(`[디버그] Settlement/Finished Phase 조건 불만족: elapsed=${elapsed}, ROUND_DURATION=${ROUND_DURATION}, settled=${roundInfo.settled}`);
         }
       }
 
