@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 async function main() {
-  console.log("🚀 MonadBlitz 컨트랙트 배포 시작...\n");
+  console.log("🚀 Oracle Derby 컨트랙트 배포 시작...\n");
 
   // TODO: Monad 네트워크의 Chainlink Price Feed 주소로 변경
   const BTC_FEED = "0x2Cd9D7E85494F68F5aF08EF96d6FD5e8F71B4d31"; // Placeholder
@@ -27,15 +27,15 @@ async function main() {
 
   console.log("📦 컨트랙트 배포 중...");
   const MonadBlitz = await hre.ethers.getContractFactory("MonadBlitz");
-  const monadBlitz = await MonadBlitz.deploy(
+  const oracleDerby = await MonadBlitz.deploy(
     BTC_FEED,
     SOL_FEED,
     DOGE_FEED,
     PEPE_FEED
   );
 
-  await monadBlitz.waitForDeployment();
-  const contractAddress = await monadBlitz.getAddress();
+  await oracleDerby.waitForDeployment();
+  const contractAddress = await oracleDerby.getAddress();
 
   console.log("✅ 배포 완료!");
   console.log("📍 컨트랙트 주소:", contractAddress);

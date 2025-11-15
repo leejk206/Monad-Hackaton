@@ -65,7 +65,7 @@ npm run dev
 ## ✅ 실행 확인
 
 ### 서버가 정상 작동하는지 확인:
-- 서버 콘솔에 "🚀 Monad Blitz 게임 서버 시작" 메시지 표시
+- 서버 콘솔에 "🚀 Oracle Derby 게임 서버 시작" 메시지 표시
 - 잔액이 충분한지 확인 (최소 0.01 MONAD 권장)
 - Racing Phase가 되면 "updatePositions 호출" 메시지가 주기적으로 표시
 

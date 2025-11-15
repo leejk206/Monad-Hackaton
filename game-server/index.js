@@ -1,5 +1,5 @@
 /**
- * Monad Blitz 게임 서버
+ * Oracle Derby 게임 서버
  * 
  * 이 서버는 다음 기능을 자동으로 처리합니다:
  * 1. Racing Phase 중 updatePositions() 자동 호출
@@ -76,7 +76,7 @@ provider.getNetwork = async function() {
 const signer = new ethers.Wallet(SERVER_PRIVATE_KEY, provider);
 const contract = new ethers.Contract(CONTRACT_ADDRESS, MonadBlitzABI, signer);
 
-console.log('🚀 Monad Blitz 게임 서버 시작');
+console.log('🚀 Oracle Derby 게임 서버 시작');
 console.log('📍 컨트랙트 주소:', CONTRACT_ADDRESS);
 console.log('   주소 길이:', CONTRACT_ADDRESS.length, '(정상: 42)');
 console.log('👤 서버 지갑 주소:', signer.address);

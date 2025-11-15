@@ -1,4 +1,4 @@
-# Monad Blitz 배포 가이드
+# Oracle Derby 배포 가이드
 
 ## 사전 준비사항
 

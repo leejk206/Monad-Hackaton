@@ -180,7 +180,7 @@ function App() {
     return (
       <div className="app">
         <header className="app-header">
-          <h1>🏇 Monad Blitz</h1>
+          <h1>🏇 Oracle Derby</h1>
           <WalletButton />
         </header>
         <main className="app-main">
@@ -204,7 +204,7 @@ function App() {
     return (
       <div className="app">
         <header className="app-header">
-          <h1>🏇 Monad Blitz</h1>
+          <h1>🏇 Oracle Derby</h1>
           <WalletButton />
         </header>
         <main className="app-main">
@@ -299,7 +299,7 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>🏇 Monad Blitz</h1>
+        <h1>🏇 Oracle Derby</h1>
         <WalletButton />
       </header>
 

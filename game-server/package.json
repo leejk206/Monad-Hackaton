@@ -1,7 +1,7 @@
 {
-  "name": "monad-blitz-game-server",
+  "name": "oracle-derby-game-server",
   "version": "1.0.0",
-  "description": "Monad Blitz 게임 서버 - 자동 updatePositions 및 게임 상태 관리",
+  "description": "Oracle Derby 게임 서버 - 자동 updatePositions 및 게임 상태 관리",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"

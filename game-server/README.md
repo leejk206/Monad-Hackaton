@@ -1,4 +1,4 @@
-# Monad Blitz 게임 서버
+# Oracle Derby 게임 서버
 
 로컬 PC에서 실행하는 게임 서버입니다. `updatePositions()`, `settleRound()`, `startNewRound()`를 자동으로 호출합니다.
 
