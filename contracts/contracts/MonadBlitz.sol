@@ -118,23 +118,10 @@ contract MonadBlitz is AutomationCompatibleInterface {
         Round storage round = rounds[currentRoundId];
         uint256 elapsed = block.timestamp - round.startTime;
         
-        // Betting Phase에서도 실행 가능하도록 수정 (elapsed >= RACING_PHASE_START 조건 제거)
-        // 단, 라운드가 시작된 후에만 실행 가능
-        require(elapsed > 0, "Round not started");
+        require(elapsed >= RACING_PHASE_START, "Racing phase not started");
         require(elapsed < RACING_PHASE_END || round.phase == Phase.Racing, "Racing phase ended");
         
-        // 베팅 단계에서는 위치를 업데이트하지 않음 (가격만 업데이트)
         if (round.phase == Phase.Betting) {
-            // 베팅 단계에서는 가격만 업데이트하고 위치는 업데이트하지 않음
-            for (uint8 i = 0; i < 4; i++) {
-                int256 currentPrice = _getLatestPrice(i);
-                round.lastPrices[i] = currentPrice;
-            }
-            return; // 베팅 단계에서는 위치 업데이트 없이 종료
-        }
-        
-        // Racing Phase로 전환 (elapsed >= RACING_PHASE_START일 때)
-        if (elapsed >= RACING_PHASE_START && round.phase == Phase.Betting) {
             round.phase = Phase.Racing;
         }
         

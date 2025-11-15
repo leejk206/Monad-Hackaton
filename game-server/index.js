@@ -20,12 +20,12 @@ const MonadBlitzABI = require('../src/abis/MonadBlitz.json');
 // 설정
 const RPC_URL = process.env.RPC_URL || 'https://testnet-rpc.monad.xyz';
 // 컨트랙트 주소 확인 (42자여야 함)
-let contractAddress = process.env.CONTRACT_ADDRESS || '0x8a7fbc99a90A98c11E46391C73032229ecc7528b';
+let contractAddress = process.env.CONTRACT_ADDRESS || '0xcf757056723C2044CE13bd0eAff7ed6c59adb250';
 if (contractAddress.length !== 42) {
   console.error(`❌ 컨트랙트 주소가 잘못되었습니다! (길이: ${contractAddress.length}, 정상: 42)`);
   console.error(`   현재 주소: ${contractAddress}`);
   // 올바른 주소로 수정
-  contractAddress = '0x8a7fbc99a90A98c11E46391C73032229ecc7528b';
+  contractAddress = '0xcf757056723C2044CE13bd0eAff7ed6c59adb250';
   console.log(`   수정된 주소: ${contractAddress}`);
 }
 const CONTRACT_ADDRESS = contractAddress;
@@ -194,9 +194,9 @@ async function executeUpdatePositions() {
     const phase = calculatePhase(elapsed, roundInfo.settled);
     const contractPhase = Number(roundInfo[2]); // 컨트랙트의 실제 phase
     
-    // 컨트랙트 조건: elapsed > 0 && elapsed < RACING_PHASE_END (80초)
-    // Betting Phase에서도 실행 가능 (컨트랙트가 자동으로 Racing Phase로 전환)
-    if (elapsed > 0 && elapsed < RACING_PHASE_END && !roundInfo.settled) {
+    // 베팅 단계에서는 updatePositions를 실행하지 않음
+    // Racing Phase가 시작된 후에만 실행 (elapsed >= RACING_PHASE_START)
+    if (elapsed >= RACING_PHASE_START && elapsed < RACING_PHASE_END && !roundInfo.settled) {
       console.log(`[${new Date().toLocaleTimeString()}] 🏃 updatePositions 호출 (elapsed: ${elapsed}s, contractPhase: ${contractPhase})`);
       const tx = await contract.updatePositions();
       console.log(`  ✅ 트랜잭션 전송: ${tx.hash}`);
