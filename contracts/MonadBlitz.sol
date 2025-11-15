@@ -33,6 +33,7 @@ contract MonadBlitz is AutomationCompatibleInterface {
     // ============ Structs ============
     struct Round {
         uint256 startTime;
+        uint256 lastUpdateTime; // 마지막 위치 업데이트 시간 (초 단위)
         Phase phase;
         uint8 winner; // 0: BTC, 1: ETH, 2: MONAD, 3: DOGE
         bool settled;
@@ -139,16 +140,30 @@ contract MonadBlitz is AutomationCompatibleInterface {
         }
         
         if (!finished) {
-            // Update positions based on price changes
+            // 마지막 업데이트 시간 계산 (첫 업데이트면 RACING_PHASE_START 시점부터)
+            uint256 lastUpdate = round.lastUpdateTime;
+            if (lastUpdate == 0) {
+                // 첫 업데이트: RACING_PHASE_START 시점부터 계산
+                lastUpdate = round.startTime + RACING_PHASE_START;
+            }
+            
+            // 경과 시간 계산 (초 단위)
+            uint256 currentTime = block.timestamp;
+            uint256 timeDelta = currentTime - lastUpdate;
+            
+            // Update positions based on price changes and time elapsed
             for (uint8 i = 0; i < 4; i++) {
                 int256 currentPrice = _getLatestPrice(i);
                 int256 speed = _computeSpeed(i, currentPrice, round.lastPrices[i]);
                 
-                // Update position (speed can be negative, but position can't go below START_POS)
-                if (speed > 0) {
-                    round.positions[i] += uint256(speed);
+                // 속도는 초당 단위이므로, 경과 시간(초)을 곱하여 실제 이동량 계산
+                int256 movement = speed * int256(timeDelta);
+                
+                // Update position (movement can be negative, but position can't go below START_POS)
+                if (movement > 0) {
+                    round.positions[i] += uint256(movement);
                 } else {
-                    int256 newPos = int256(round.positions[i]) + speed;
+                    int256 newPos = int256(round.positions[i]) + movement;
                     if (newPos < int256(START_POS)) {
                         round.positions[i] = START_POS;
                     } else {
@@ -159,6 +174,9 @@ contract MonadBlitz is AutomationCompatibleInterface {
                 round.lastPrices[i] = currentPrice;
                 emit PositionUpdated(currentRoundId, i, round.positions[i]);
             }
+            
+            // 마지막 업데이트 시간 저장
+            round.lastUpdateTime = currentTime;
             
             // Check if racing phase ended without winner
             if (elapsed >= RACING_PHASE_END && !finished) {
@@ -336,6 +354,7 @@ contract MonadBlitz is AutomationCompatibleInterface {
         currentRoundId++;
         Round storage round = rounds[currentRoundId];
         round.startTime = block.timestamp;
+        round.lastUpdateTime = 0; // 첫 업데이트 전까지 0으로 유지
         round.phase = Phase.Betting;
         
         // Initialize positions
