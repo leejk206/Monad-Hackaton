@@ -1,12 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
-import { getContract, getCurrentRound, getPositions, getTotalBets, getUserBets, getUserWinnings, checkContractExists, isContractAddressValid, updatePositions, settleRound, startNewRound } from "../utils/contract";
+import { getContract, getCurrentRound, getPositions, getTotalBets, getUserBets, getUserWinnings, checkContractExists, isContractAddressValid } from "../utils/contract";
 import { ROUND_DURATION, BETTING_PHASE_END, RACING_PHASE_START, RACING_PHASE_END } from "../config";
 import { Phase, GameState } from "../types";
-import { useWallet } from "./useWallet";
 
 export function useGameState(provider: ethers.BrowserProvider | null, address: string | null) {
-  const { signer } = useWallet();
   const [gameState, setGameState] = useState<GameState>({
     roundInfo: null,
     positions: [0, 0, 0, 0],
@@ -19,8 +17,6 @@ export function useGameState(provider: ethers.BrowserProvider | null, address: s
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const updatePositionsIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastUpdateTimeRef = useRef<number>(0);
 
   const updateGameState = useCallback(async () => {
     if (!provider) {
@@ -36,9 +32,8 @@ export function useGameState(provider: ethers.BrowserProvider | null, address: s
     }
 
     // 네트워크가 안정화될 때까지 잠시 대기
-    let network;
     try {
-      network = await provider.getNetwork();
+      await provider.getNetwork();
     } catch (err: any) {
       // 네트워크 변경 중이면 잠시 후 재시도
       if (err.code === "NETWORK_ERROR") {
@@ -101,79 +96,7 @@ export function useGameState(provider: ethers.BrowserProvider | null, address: s
         }
       }
 
-      // Racing Phase 중에는 자동으로 updatePositions 호출
-      // 주의: 이는 트랜잭션이므로 가스가 필요합니다
-      console.log(`[디버그] Phase: ${currentPhase}, elapsed: ${elapsed}s, signer: ${signer ? '있음' : '없음'}`);
-      
-      if (currentPhase === Phase.Racing) {
-        console.log(`[디버그] Racing Phase 조건 체크: elapsed >= ${RACING_PHASE_START} && elapsed < ${RACING_PHASE_END}`);
-        if (signer && elapsed >= RACING_PHASE_START && elapsed < RACING_PHASE_END) {
-          // 5초마다 updatePositions 호출 (가스 비용 절감)
-          const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
-          console.log(`[디버그] 마지막 업데이트로부터 ${timeSinceLastUpdate}초 경과`);
-          if (timeSinceLastUpdate >= 5) {
-            try {
-              console.log(`[자동 실행] updatePositions 호출 시도 (elapsed: ${elapsed}s)`);
-              const contract = getContract(signer);
-              const tx = await contract.updatePositions();
-              console.log(`[자동 실행] updatePositions 트랜잭션 전송됨: ${tx.hash}`);
-              // 트랜잭션 완료를 기다리지 않음 (비동기 처리)
-              tx.wait().catch((err: any) => {
-                console.log(`[자동 실행] updatePositions 실패:`, err.message);
-              });
-              lastUpdateTimeRef.current = now;
-            } catch (err: any) {
-              // 모든 오류를 로그에 기록
-              console.error(`[자동 실행] updatePositions 오류:`, err);
-              if (!err.message?.includes("user rejected") && !err.message?.includes("insufficient funds")) {
-                console.log(`[자동 실행] updatePositions 상세 오류:`, err.message);
-              }
-            }
-          }
-        } else {
-          console.log(`[디버그] Racing Phase 조건 불만족: signer=${!!signer}, elapsed 조건=${elapsed >= RACING_PHASE_START && elapsed < RACING_PHASE_END}`);
-        }
-      }
-
-      // Settlement Phase가 끝나면 settleRound 호출하여 새 라운드 시작
-      // 또는 Finished Phase에서도 settleRound를 호출하여 새 라운드 시작
-      if (currentPhase === Phase.Settlement || currentPhase === Phase.Finished) {
-        console.log(`[디버그] Settlement/Finished Phase 조건 체크: elapsed >= ${ROUND_DURATION}, signer=${!!signer}, settled=${roundInfo.settled}`);
-        if (elapsed >= ROUND_DURATION && signer && !roundInfo.settled) {
-          try {
-            console.log(`[자동 실행] settleRound 호출 시도 (elapsed: ${elapsed}s, phase: ${currentPhase})`);
-            const contract = getContract(signer);
-            const tx = await contract.settleRound();
-            console.log(`[자동 실행] settleRound 트랜잭션 전송됨: ${tx.hash}`);
-            tx.wait().catch((err: any) => {
-              console.log(`[자동 실행] settleRound 실패:`, err.message);
-            });
-          } catch (err: any) {
-            console.error(`[자동 실행] settleRound 오류:`, err);
-            if (!err.message?.includes("user rejected") && !err.message?.includes("insufficient funds")) {
-              console.log(`[자동 실행] settleRound 상세 오류:`, err.message);
-            }
-          }
-        } else if (elapsed >= ROUND_DURATION && roundInfo.settled) {
-          // 이미 정산되었지만 새 라운드가 시작되지 않은 경우 - 강제로 새 라운드 시작
-          try {
-            console.log(`[자동 실행] startNewRound 호출 시도 (elapsed: ${elapsed}s, settled: ${roundInfo.settled})`);
-            const contract = getContract(signer);
-            const tx = await contract.startNewRound();
-            console.log(`[자동 실행] startNewRound 트랜잭션 전송됨: ${tx.hash}`);
-            tx.wait().catch((err: any) => {
-              console.log(`[자동 실행] startNewRound 실패:`, err.message);
-            });
-          } catch (err: any) {
-            console.error(`[자동 실행] startNewRound 오류:`, err);
-            if (!err.message?.includes("user rejected") && !err.message?.includes("insufficient funds")) {
-              console.log(`[자동 실행] startNewRound 상세 오류:`, err.message);
-            }
-          }
-        } else {
-          console.log(`[디버그] Settlement/Finished Phase 조건 불만족: elapsed=${elapsed}, ROUND_DURATION=${ROUND_DURATION}, settled=${roundInfo.settled}`);
-        }
-      }
+      // 게임 상태 업데이트는 로컬 서버에서 처리합니다
 
       // Get user-specific data
       let userBets: any[] = [];
@@ -205,8 +128,8 @@ export function useGameState(provider: ethers.BrowserProvider | null, address: s
       // BAD_DATA 오류는 컨트랙트가 없거나 주소가 잘못된 경우
       if (err.code === "BAD_DATA" || err.message?.includes("could not decode")) {
         try {
-          const network = await provider.getNetwork();
-          const currentChainId = Number(network.chainId);
+          const networkInfo = await provider.getNetwork();
+          const currentChainId = Number(networkInfo.chainId);
           const { CONTRACT_ADDRESS } = await import("../config");
           const { MONAD_NETWORK } = await import("../config");
           
@@ -222,9 +145,10 @@ export function useGameState(provider: ethers.BrowserProvider | null, address: s
             `4. 컨트랙트가 해당 네트워크에 배포되지 않았습니다.`
           );
         } catch (networkError) {
+          const { CONTRACT_ADDRESS: CONTRACT_ADDR } = await import("../config");
           setError(
             `컨트랙트 호출 실패 (BAD_DATA)\n\n` +
-            `컨트랙트 주소: ${CONTRACT_ADDRESS}\n\n` +
+            `컨트랙트 주소: ${CONTRACT_ADDR}\n\n` +
             `가능한 원인:\n` +
             `1. 네트워크가 일치하지 않습니다.\n` +
             `2. 컨트랙트 ABI가 맞지 않습니다.\n` +
@@ -244,7 +168,7 @@ export function useGameState(provider: ethers.BrowserProvider | null, address: s
     } finally {
       setLoading(false);
     }
-  }, [provider, address, signer]);
+  }, [provider, address]);
 
   useEffect(() => {
     updateGameState();
@@ -252,22 +176,10 @@ export function useGameState(provider: ethers.BrowserProvider | null, address: s
     // Update every second
     const interval = setInterval(updateGameState, 1000);
 
-    // Racing Phase 중에는 더 자주 업데이트 (위치 업데이트 포함)
-    const racingInterval = setInterval(() => {
-      if (gameState.currentPhase === Phase.Racing) {
-        updateGameState();
-      }
-    }, 500);
-
     return () => {
       clearInterval(interval);
-      clearInterval(racingInterval);
-      if (updatePositionsIntervalRef.current) {
-        clearInterval(updatePositionsIntervalRef.current);
-        updatePositionsIntervalRef.current = null;
-      }
     };
-  }, [updateGameState, gameState.currentPhase, signer]);
+  }, [updateGameState]);
 
   return { gameState, loading, error, updateGameState };
 }

@@ -6,75 +6,14 @@ import { BettingPanel } from "./components/BettingPanel";
 import { WinningsPanel } from "./components/WinningsPanel";
 import { useGameState } from "./hooks/useGameState";
 import { useWallet } from "./hooks/useWallet";
-import { getContract, updatePositions, settleRound, startNewRound } from "./utils/contract";
-import { Phase } from "./types";
 import "./App.css";
 
 function App() {
-  const { provider, address, signer } = useWallet();
+  const { provider, address } = useWallet();
   const { gameState, loading, error, updateGameState } = useGameState(
     provider,
     address
   );
-  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
-
-  const handleManualUpdate = async () => {
-    console.log("[수동 업데이트] 버튼 클릭됨");
-    console.log("[수동 업데이트] signer:", signer);
-    console.log("[수동 업데이트] currentPhase:", gameState.currentPhase);
-    
-    if (!signer) {
-      console.error("[수동 업데이트] signer가 없습니다");
-      alert("지갑을 연결해주세요.");
-      return;
-    }
-
-    setIsUpdating(true);
-    try {
-      console.log("[수동 업데이트] 컨트랙트 가져오는 중...");
-      const contract = getContract(signer);
-      console.log("[수동 업데이트] 컨트랙트:", contract);
-      
-      if (gameState.currentPhase === Phase.Racing) {
-        console.log("[수동 업데이트] updatePositions 호출 중...");
-        const tx = await contract.updatePositions();
-        console.log("[수동 업데이트] updatePositions 트랜잭션:", tx.hash);
-        await tx.wait();
-        console.log("[수동 업데이트] updatePositions 완료");
-        alert("위치가 업데이트되었습니다!");
-      } else if (gameState.currentPhase === Phase.Settlement) {
-        console.log("[수동 업데이트] settleRound 호출 중...");
-        const tx = await contract.settleRound();
-        console.log("[수동 업데이트] settleRound 트랜잭션:", tx.hash);
-        await tx.wait();
-        console.log("[수동 업데이트] settleRound 완료");
-        alert("라운드가 정산되었습니다!");
-      } else if (gameState.currentPhase === Phase.Finished) {
-        console.log("[수동 업데이트] startNewRound 호출 중...");
-        const tx = await contract.startNewRound();
-        console.log("[수동 업데이트] startNewRound 트랜잭션:", tx.hash);
-        await tx.wait();
-        console.log("[수동 업데이트] startNewRound 완료");
-        alert("새 라운드가 시작되었습니다!");
-      } else {
-        console.log("[수동 업데이트] 현재 Phase는 업데이트할 수 없습니다:", gameState.currentPhase);
-        alert(`현재 Phase (${gameState.currentPhase})에서는 업데이트할 수 없습니다.`);
-      }
-      
-      updateGameState();
-    } catch (err: any) {
-      console.error("[수동 업데이트] 실패:", err);
-      console.error("[수동 업데이트] 오류 상세:", {
-        message: err.message,
-        code: err.code,
-        data: err.data
-      });
-      alert(`업데이트 실패: ${err.message || err.toString()}`);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   if (loading && !gameState.roundInfo) {
     return (
@@ -189,34 +128,6 @@ function App() {
             )}
           </div>
 
-          {/* 수동 업데이트 버튼 (디버깅용) */}
-          {signer && (gameState.currentPhase === Phase.Racing || gameState.currentPhase === Phase.Settlement || gameState.currentPhase === Phase.Finished) && (
-            <div style={{ marginTop: "20px", textAlign: "center" }}>
-              <label style={{ marginRight: "10px" }}>
-                <input
-                  type="checkbox"
-                  checked={autoUpdateEnabled}
-                  onChange={(e) => setAutoUpdateEnabled(e.target.checked)}
-                />
-                자동 업데이트
-              </label>
-              <button
-                onClick={handleManualUpdate}
-                disabled={isUpdating}
-                style={{
-                  marginLeft: "10px",
-                  padding: "8px 16px",
-                  background: "#2196F3",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer"
-                }}
-              >
-                {isUpdating ? "처리 중..." : "수동 업데이트"}
-              </button>
-            </div>
-          )}
         </div>
       </main>
     </div>

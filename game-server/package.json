@@ -1,0 +1,14 @@
+{
+  "name": "monad-blitz-game-server",
+  "version": "1.0.0",
+  "description": "Monad Blitz 게임 서버 - 자동 updatePositions 및 게임 상태 관리",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "ethers": "^6.9.0"
+  }
+}
+
