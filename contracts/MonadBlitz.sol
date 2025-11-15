@@ -16,8 +16,8 @@ contract MonadBlitz is AutomationCompatibleInterface {
     uint256 public constant RACING_PHASE_START = 40 seconds;
     uint256 public constant RACING_PHASE_END = 80 seconds;
     
-    uint256 public constant START_POS = 3000;
-    uint256 public constant FINISH_POS = 10000;
+    uint256 public constant START_POS = 0;
+    uint256 public constant FINISH_POS = 300;
     
     uint256 public constant MIN_BET_AMOUNT = 0.001 ether; // TODO: 튜닝 가능
     uint256 public constant MAX_BET_AMOUNT = 10 ether; // TODO: 튜닝 가능
@@ -112,10 +112,12 @@ contract MonadBlitz is AutomationCompatibleInterface {
     }
     
     /**
-     * @dev Update horse positions based on price feeds
-     * Should be called periodically during Racing Phase
+     * @dev Update horse positions based on price data stream
+     * @param prices Array of current prices for each horse [BTC, SOL, DOGE, PEPE]
+     * Prices should be in 8 decimal format (e.g., 50000.12345678 = 5000012345678)
+     * Should be called every 2 seconds during Racing Phase
      */
-    function updatePositions() external {
+    function updatePositions(int256[4] calldata prices) external {
         Round storage round = rounds[currentRoundId];
         uint256 elapsed = block.timestamp - round.startTime;
         

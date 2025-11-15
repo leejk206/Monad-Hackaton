@@ -19,63 +19,89 @@ cd contracts
 npm install
 ```
 
-### 2. Chainlink Price Feed 주소 설정
+### 2. 환경 변수 설정
+
+`contracts` 디렉토리에 `.env` 파일을 생성하고 배포에 사용할 개인키를 설정합니다:
+
+```bash
+PRIVATE_KEY=your_private_key_here
+```
+
+⚠️ **주의**: `.env` 파일은 절대 공개 저장소에 커밋하지 마세요!
+
+### 3. Chainlink Price Feed 주소 설정
 
 `contracts/scripts/deploy.js` 파일에서 실제 Chainlink Price Feed 주소로 업데이트:
 
 ```javascript
 const BTC_FEED = "0x..."; // Monad 네트워크의 BTC Price Feed 주소
-const ETH_FEED = "0x..."; // Monad 네트워크의 ETH Price Feed 주소
-const MONAD_FEED = "0x..."; // Monad 네트워크의 MONAD Price Feed 주소
+const SOL_FEED = "0x..."; // Monad 네트워크의 SOL Price Feed 주소
 const DOGE_FEED = "0x..."; // Monad 네트워크의 DOGE Price Feed 주소
+const PEPE_FEED = "0x..."; // Monad 네트워크의 PEPE Price Feed 주소
 ```
 
-### 3. 네트워크 설정
+### 4. 네트워크 설정
 
 `contracts/hardhat.config.js`에서 Monad 네트워크 RPC URL 확인 및 수정
 
-### 4. 컨트랙트 컴파일
+### 5. 컨트랙트 컴파일
 
 ```bash
 npm run compile
 ```
 
-### 5. 배포
+### 6. 배포
 
 ```bash
 npm run deploy
 ```
 
-배포 후 출력된 컨트랙트 주소를 복사합니다.
+배포 스크립트는 다음을 자동으로 수행합니다:
+- 컨트랙트 배포
+- 배포된 컨트랙트 주소 출력
+- ABI 파일 자동 복사 (`src/abis/MonadBlitz.json`)
+
+배포 후 출력된 컨트랙트 주소를 다음 파일에 업데이트해야 합니다:
 
 ## 프론트엔드 설정
 
 ### 1. 컨트랙트 주소 업데이트
 
-`src/config.ts` 파일에서 배포된 컨트랙트 주소로 업데이트:
+배포 스크립트가 출력한 컨트랙트 주소를 `src/config.ts` 파일에 업데이트:
 
 ```typescript
 export const CONTRACT_ADDRESS = "0x..."; // 배포된 컨트랙트 주소
 ```
 
-### 2. 네트워크 설정 확인
+배포 스크립트가 출력한 주소를 복사하여 붙여넣으세요.
+
+### 2. 게임 서버 설정
+
+`game-server` 디렉토리의 `.env` 파일에 배포된 컨트랙트 주소를 추가:
+
+```bash
+CONTRACT_ADDRESS=0x... # 배포된 컨트랙트 주소
+RPC_URL=https://testnet-rpc.monad.xyz
+SERVER_PRIVATE_KEY=your_server_private_key
+```
+
+### 3. 네트워크 설정 확인
 
 `src/config.ts`에서 Monad 네트워크 정보 확인:
 
 ```typescript
 export const MONAD_NETWORK = {
-  chainId: 0x1a4, // 실제 Monad 체인 ID
+  chainId: 0x279F, // 10143 (10진수) - Monad Testnet
   name: "Monad Testnet",
-  rpcUrl: "https://testnet-rpc.monad.xyz", // 실제 RPC URL
+  rpcUrl: "https://testnet-rpc.monad.xyz",
   // ...
 };
 ```
 
-### 3. ABI 업데이트 (선택사항)
+### 4. ABI 파일 확인
 
-컨트랙트를 수정한 경우, `src/abis/MonadBlitz.json`을 업데이트해야 합니다.
-
-컴파일된 ABI는 `contracts/artifacts/contracts/MonadBlitz.sol/MonadBlitz.json`에서 확인할 수 있습니다.
+배포 스크립트가 자동으로 `src/abis/MonadBlitz.json`을 업데이트합니다. 
+수동으로 업데이트가 필요한 경우, `contracts/artifacts/contracts/MonadBlitz.sol/MonadBlitz.json`의 `abi` 필드를 복사하세요.
 
 ## 실행
 

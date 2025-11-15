@@ -28,8 +28,8 @@ SERVER_PRIVATE_KEY=your_private_key_here
 # RPC URL (선택사항)
 RPC_URL=https://testnet-rpc.monad.xyz
 
-# 컨트랙트 주소 (선택사항)
-CONTRACT_ADDRESS=0x4e1a649aE9ed9d22D97122eEd54272c361Ed8092
+# 컨트랙트 주소 (선택사항, 기본값: 최신 배포 주소)
+CONTRACT_ADDRESS=0xE60028f572D45912C655f03A260f81Ee0848c387
 ```
 
 ## 실행

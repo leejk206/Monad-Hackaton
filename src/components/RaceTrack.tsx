@@ -13,7 +13,9 @@ export function RaceTrack({ positions, winner }: RaceTrackProps) {
   const finishLineX = trackWidth;
 
   const getHorseX = (position: number) => {
-    const progress = (position - START_POS) / (FINISH_POS - START_POS);
+    // 위치를 300으로 제한
+    const clampedPosition = Math.min(position, FINISH_POS);
+    const progress = (clampedPosition - START_POS) / (FINISH_POS - START_POS);
     return Math.min(progress * trackWidth, trackWidth);
   };
 
@@ -73,12 +75,15 @@ export function RaceTrack({ positions, winner }: RaceTrackProps) {
 
       {/* Position indicators */}
       <div className="position-indicators">
-        {HORSES.map((horse, index) => (
-          <div key={horse.id} className="position-indicator">
-            <span style={{ color: horse.color }}>{horse.symbol}</span>
-            <span>{Math.floor((positions[index] || START_POS) / 100)}m</span>
-          </div>
-        ))}
+        {HORSES.map((horse, index) => {
+          const position = Math.min(positions[index] || START_POS, FINISH_POS);
+          return (
+            <div key={horse.id} className="position-indicator">
+              <span style={{ color: horse.color }}>{horse.symbol}</span>
+              <span>{Math.floor(position)}m</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

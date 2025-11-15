@@ -7,7 +7,7 @@ const { ethers } = require('ethers');
 const MonadBlitzABI = require('../src/abis/MonadBlitz.json');
 
 const RPC_URL = process.env.RPC_URL || 'https://testnet-rpc.monad.xyz';
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0x9a607c5c2A4cD964540cee13E01A9217A791A639';
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0xE60028f572D45912C655f03A260f81Ee0848c387';
 
 const RACING_PHASE_END = 80;
 const ROUND_DURATION = 90;

@@ -16,8 +16,8 @@ contract MonadBlitz is AutomationCompatibleInterface {
     uint256 public constant RACING_PHASE_START = 40 seconds;
     uint256 public constant RACING_PHASE_END = 80 seconds;
     
-    uint256 public constant START_POS = 3000;
-    uint256 public constant FINISH_POS = 10000;
+    uint256 public constant START_POS = 0;
+    uint256 public constant FINISH_POS = 300;
     
     uint256 public constant MIN_BET_AMOUNT = 0.001 ether; // TODO: 튜닝 가능
     uint256 public constant MAX_BET_AMOUNT = 10 ether; // TODO: 튜닝 가능
@@ -149,9 +149,15 @@ contract MonadBlitz is AutomationCompatibleInterface {
                 // 속도는 초당 단위이므로, 경과 시간(초)을 곱하여 실제 이동량 계산
                 int256 movement = speed * int256(timeDelta);
                 
-                // Update position (movement can be negative, but position can't go below START_POS)
+                // Update position (movement can be negative, but position can't go below START_POS or above FINISH_POS)
                 if (movement > 0) {
-                    round.positions[i] += uint256(movement);
+                    uint256 newPos = round.positions[i] + uint256(movement);
+                    // 경기장 넓이를 300으로 제한
+                    if (newPos > FINISH_POS) {
+                        round.positions[i] = FINISH_POS;
+                    } else {
+                        round.positions[i] = newPos;
+                    }
                 } else {
                     int256 newPos = int256(round.positions[i]) + movement;
                     if (newPos < int256(START_POS)) {
@@ -508,9 +514,15 @@ contract MonadBlitz is AutomationCompatibleInterface {
                 // 속도는 초당 단위이므로, 경과 시간(초)을 곱하여 실제 이동량 계산
                 int256 movement = speed * int256(timeDelta);
                 
-                // Update position (movement can be negative, but position can't go below START_POS)
+                // Update position (movement can be negative, but position can't go below START_POS or above FINISH_POS)
                 if (movement > 0) {
-                    round.positions[i] += uint256(movement);
+                    uint256 newPos = round.positions[i] + uint256(movement);
+                    // 경기장 넓이를 300으로 제한
+                    if (newPos > FINISH_POS) {
+                        round.positions[i] = FINISH_POS;
+                    } else {
+                        round.positions[i] = newPos;
+                    }
                 } else {
                     int256 newPos = int256(round.positions[i]) + movement;
                     if (newPos < int256(START_POS)) {

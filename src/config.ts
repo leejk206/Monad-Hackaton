@@ -1,7 +1,7 @@
 // Monad Blitz Configuration
 
-// TODO: 배포 후 실제 컨트랙트 주소로 변경
-export const CONTRACT_ADDRESS = "0x32457161417Da4395bB76e7D665e81953d30f693";
+// 배포된 컨트랙트 주소
+export const CONTRACT_ADDRESS = "0xE60028f572D45912C655f03A260f81Ee0848c387";
 
 // Monad 네트워크 설정
 export const MONAD_NETWORK = {
@@ -22,8 +22,8 @@ export const BETTING_PHASE_END = 35; // seconds
 export const RACING_PHASE_START = 40; // seconds
 export const RACING_PHASE_END = 80; // seconds
 
-export const START_POS = 3000;
-export const FINISH_POS = 10000;
+export const START_POS = 0;
+export const FINISH_POS = 300;
 
 export const MIN_BET_AMOUNT = 0.001; // MONAD
 export const MAX_BET_AMOUNT = 10; // MONAD

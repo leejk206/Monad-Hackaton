@@ -14,8 +14,8 @@ async function main() {
   // TODO: Monad 네트워크의 Chainlink Automation Registry 주소로 변경
   const REGISTRY_ADDRESS = "0x0000000000000000000000000000000000000000"; // Placeholder
   
-  // TODO: 배포된 MonadBlitz 컨트랙트 주소로 변경
-  const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
+  // 배포된 MonadBlitz 컨트랙트 주소
+  const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0xE60028f572D45912C655f03A260f81Ee0848c387";
   
   if (REGISTRY_ADDRESS === "0x0000000000000000000000000000000000000000") {
     console.error("❌ REGISTRY_ADDRESS를 설정해주세요!");

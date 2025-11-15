@@ -7,7 +7,7 @@ const { ethers } = require('ethers');
 const MonadBlitzABI = require('../src/abis/MonadBlitz.json');
 
 const RPC_URL = process.env.RPC_URL || 'https://testnet-rpc.monad.xyz';
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0x4e1a649aE9ed9d22D97122eEd54272c361Ed8092';
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0xE60028f572D45912C655f03A260f81Ee0848c387';
 const SERVER_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY;
 
 if (!SERVER_PRIVATE_KEY) {
