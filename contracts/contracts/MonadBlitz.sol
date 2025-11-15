@@ -25,9 +25,9 @@ contract MonadBlitz is AutomationCompatibleInterface {
     // SPEED_FORMULA_TODO: 속도 결정식 상수들 - 튜닝 가능하게 분리
     // Racing Phase는 40초 동안 진행되며, 경기장 크기는 500 units
     // 평균 속도: 500 / 40 = 12.5 units/sec (가격 변화 고려하여 BASE_SPEED 설정)
-    // 변동에 의한 속도 변화를 10배로 줄임 (SPEED_MULTIPLIER: 2500 → 250)
+    // 변동에 의한 속도 변화를 10배로 증가 (SPEED_MULTIPLIER: 250 → 2500)
     int256 public constant BASE_SPEED = 2; // 기본 속도 (units per second)
-    int256 public constant SPEED_MULTIPLIER = 250; // 가격 변화율에 대한 속도 배수 (기존의 1/10로 감소)
+    int256 public constant SPEED_MULTIPLIER = 2500; // 가격 변화율에 대한 속도 배수 (10배 증가)
     
     // ============ Enums ============
     enum Phase { Betting, Racing, Settlement, Finished }

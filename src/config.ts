@@ -1,7 +1,7 @@
 // Oracle Derby Configuration
 
 // 배포된 컨트랙트 주소
-export const CONTRACT_ADDRESS = "0x4b918754F5F5bdC54897a63dc66BeC262e4ba181";
+export const CONTRACT_ADDRESS = "0x896779DC2526e5eBA5852A0D98aA03326FF8eaA5";
 
 // Monad 네트워크 설정
 export const MONAD_NETWORK = {
