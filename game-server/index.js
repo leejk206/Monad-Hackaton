@@ -19,7 +19,7 @@ const MonadBlitzABI = require('../src/abis/MonadBlitz.json');
 
 // 설정
 const RPC_URL = process.env.RPC_URL || 'https://testnet-rpc.monad.xyz';
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0x9a607c5c2A4cD964540cee13E01A9217A791A639';
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0x0262E2AcFCC2f27786317407477773D32510a644';
 const SERVER_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY; // 서버 지갑의 개인키 (가스비 충전 필요)
 
 // 게임 상수

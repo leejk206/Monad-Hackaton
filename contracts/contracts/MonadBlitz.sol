@@ -23,8 +23,8 @@ contract MonadBlitz is AutomationCompatibleInterface {
     uint256 public constant MAX_BET_AMOUNT = 10 ether; // TODO: 튜닝 가능
     
     // SPEED_FORMULA_TODO: 속도 결정식 상수들 - 튜닝 가능하게 분리
-    int256 public constant BASE_SPEED = 100; // 기비비본 속도 (units per second)
-    int256 public constant SPEED_MULTIPLIER = 10; // 가격 변화율에 대한 속도 배수
+    int256 public constant BASE_SPEED = 100; // 기본 속도 (units per second)
+    int256 public constant SPEED_MULTIPLIER = 2000; // 가격 변화율에 대한 속도 배수 (200배 증가)
     
     // ============ Enums ============
     enum Phase { Betting, Racing, Settlement, Finished }
