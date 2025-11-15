@@ -48,9 +48,9 @@ export function RaceTrack({ positions, winner }: RaceTrackProps) {
             >
               <div className="horse-emoji">
                 {horse.symbol === "BTC" && "₿"}
-                {horse.symbol === "ETH" && "Ξ"}
-                {horse.symbol === "MONAD" && "⚡"}
+                {horse.symbol === "SOL" && "🟣"}
                 {horse.symbol === "DOGE" && "🐕"}
+                {horse.symbol === "PEPE" && "🐸"}
               </div>
               <div className="horse-name">{horse.symbol}</div>
               {isWinner && <div className="winner-crown">👑</div>}

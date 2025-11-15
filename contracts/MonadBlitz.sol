@@ -23,12 +23,12 @@ contract MonadBlitz is AutomationCompatibleInterface {
     uint256 public constant MAX_BET_AMOUNT = 10 ether; // TODO: 튜닝 가능
     
     // SPEED_FORMULA_TODO: 속도 결정식 상수들 - 튜닝 가능하게 분리
-    int256 public constant BASE_SPEED = 100; // 기본 속도 (units per second)
+    int256 public constant BASE_SPEED = 50; // 기본 속도 (units per second) - 절반으로 감소
     int256 public constant SPEED_MULTIPLIER = 50000; // 가격 변화율에 대한 속도 배수
     
     // ============ Enums ============
     enum Phase { Betting, Racing, Settlement, Finished }
-    enum Horse { BTC, ETH, MONAD, DOGE }
+    enum Horse { BTC, SOL, DOGE, PEPE }
     
     // ============ Structs ============
     struct Round {
@@ -68,14 +68,14 @@ contract MonadBlitz is AutomationCompatibleInterface {
     // ============ Constructor ============
     constructor(
         address _btcFeed,
-        address _ethFeed,
-        address _monadFeed,
-        address _dogeFeed
+        address _solFeed,
+        address _dogeFeed,
+        address _pepeFeed
     ) {
         priceFeeds[uint8(Horse.BTC)] = AggregatorV3Interface(_btcFeed);
-        priceFeeds[uint8(Horse.ETH)] = AggregatorV3Interface(_ethFeed);
-        priceFeeds[uint8(Horse.MONAD)] = AggregatorV3Interface(_monadFeed);
+        priceFeeds[uint8(Horse.SOL)] = AggregatorV3Interface(_solFeed);
         priceFeeds[uint8(Horse.DOGE)] = AggregatorV3Interface(_dogeFeed);
+        priceFeeds[uint8(Horse.PEPE)] = AggregatorV3Interface(_pepeFeed);
         
         // Start first round
         _startNewRound();

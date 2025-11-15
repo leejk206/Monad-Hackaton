@@ -1,7 +1,7 @@
 // Monad Blitz Configuration
 
 // TODO: 배포 후 실제 컨트랙트 주소로 변경
-export const CONTRACT_ADDRESS = "0x05E30086e9f6AD5A871799e63840Da4c5441a49E";
+export const CONTRACT_ADDRESS = "0x95a2c5607ad85c6499778d9C7E61596cbD8dEbB5";
 
 // Monad 네트워크 설정
 export const MONAD_NETWORK = {
@@ -31,8 +31,8 @@ export const MAX_BET_AMOUNT = 10; // MONAD
 // 말(코인) 정보
 export const HORSES = [
   { id: 0, name: "Bitcoin", symbol: "BTC", color: "#F7931A" },
-  { id: 1, name: "Ethereum", symbol: "ETH", color: "#627EEA" },
-  { id: 2, name: "Monad", symbol: "MONAD", color: "#FF6B6B" },
-  { id: 3, name: "Dogecoin", symbol: "DOGE", color: "#C2A633" },
+  { id: 1, name: "Solana", symbol: "SOL", color: "#14F195" },
+  { id: 2, name: "Dogecoin", symbol: "DOGE", color: "#C2A633" },
+  { id: 3, name: "Pepe", symbol: "PEPE", color: "#00D395" },
 ] as const;
 

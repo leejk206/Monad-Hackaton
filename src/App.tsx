@@ -14,9 +14,9 @@ import "./App.css";
 // TradingView에서 사용할 코인 심볼 목록
 const COINS = [
   { label: "BTC", symbol: "BINANCE:BTCUSDT" },
-  { label: "ETH", symbol: "BINANCE:ETHUSDT" },
-  { label: "LINK", symbol: "BINANCE:LINKUSDT" },
+  { label: "SOL", symbol: "BINANCE:SOLUSDT" },
   { label: "DOGE", symbol: "BINANCE:DOGEUSDT" },
+  { label: "PEPE", symbol: "BINANCE:PEPEUSDT" },
 ];
 
 function App() {
@@ -434,7 +434,7 @@ function App() {
                   color: "#9ca3af",
                 }}
               >
-                실제 시장 차트를 보면서 어느 말(BTC / ETH / LINK / DOGE)에
+                실제 시장 차트를 보면서 어느 말(BTC / SOL / DOGE / PEPE)에
                 베팅할지 결정해 보세요.
               </p>
 
