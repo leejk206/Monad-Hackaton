@@ -20,12 +20,12 @@ const MonadBlitzABI = require('../src/abis/MonadBlitz.json');
 // 설정
 const RPC_URL = process.env.RPC_URL || 'https://testnet-rpc.monad.xyz';
 // 컨트랙트 주소 확인 (42자여야 함)
-let contractAddress = process.env.CONTRACT_ADDRESS || '0xEb90220146fd41F39c0081ec42b982d783a5107d';
+let contractAddress = process.env.CONTRACT_ADDRESS || '0x84afBE40851EDB4A634a588e73bA02402710d292';
 if (contractAddress.length !== 42) {
   console.error(`❌ 컨트랙트 주소가 잘못되었습니다! (길이: ${contractAddress.length}, 정상: 42)`);
   console.error(`   현재 주소: ${contractAddress}`);
   // 올바른 주소로 수정
-  contractAddress = '0xEb90220146fd41F39c0081ec42b982d783a5107d';
+  contractAddress = '0x84afBE40851EDB4A634a588e73bA02402710d292';
   console.log(`   수정된 주소: ${contractAddress}`);
 }
 const CONTRACT_ADDRESS = contractAddress;
@@ -38,8 +38,8 @@ const RACING_PHASE_START = 40; // seconds
 const RACING_PHASE_END = 80; // seconds
 
 // 체크 간격
-const CHECK_INTERVAL = 5000; // 5초마다 체크
-const UPDATE_POSITIONS_INTERVAL = 5000; // 5초마다 updatePositions 호출
+const CHECK_INTERVAL = 2000; // 2초마다 체크 (RPC 제한 방지)
+const UPDATE_POSITIONS_INTERVAL = 2000; // 2초마다 updatePositions 호출 (RPC 제한 방지)
 
 // Provider 및 Signer 설정
 if (!SERVER_PRIVATE_KEY) {
@@ -134,22 +134,26 @@ async function getCurrentRound() {
     // 실제 오류 메시지 출력
     const errorMsg = error.message || error.reason || String(error);
     const errorCode = error.code || '';
+    const errorInfo = error.error || error.info || {};
     
-    // 모든 오류를 로그로 출력 (디버깅용)
-    console.error('   ❌ 라운드 정보 조회 실패:');
-    console.error('      메시지:', errorMsg);
-    console.error('      코드:', errorCode);
-    if (error.data) {
-      console.error('      데이터:', error.data);
-    }
-    if (error.info) {
-      console.error('      정보:', error.info);
-    }
-    
-    // ENS 관련 오류는 무시하되 로그는 출력
-    if (errorMsg.includes('ENS') || errorCode === 'UNSUPPORTED_OPERATION') {
-      console.log('      → ENS 오류로 무시됨');
+    // RPC 요청 제한 오류는 조용히 처리 (너무 많은 로그 방지)
+    if (errorMsg.includes('request limit reached') || 
+        errorMsg.includes('rate limit') ||
+        (errorInfo.code === -32007)) {
+      // RPC 제한 오류는 조용히 무시 (재시도는 다음 주기에서)
       return null;
+    }
+    
+    // ENS 관련 오류는 무시
+    if (errorMsg.includes('ENS') || errorCode === 'UNSUPPORTED_OPERATION') {
+      return null;
+    }
+    
+    // 다른 오류는 로그 출력 (중요한 오류만)
+    if (!errorMsg.includes('request limit') && !errorMsg.includes('rate limit')) {
+      console.error('   ❌ 라운드 정보 조회 실패:');
+      console.error('      메시지:', errorMsg);
+      console.error('      코드:', errorCode);
     }
     
     return null;
@@ -174,10 +178,10 @@ function calculatePhase(elapsed, settled) {
 // updatePositions 실행
 let lastUpdateTime = 0;
 async function executeUpdatePositions() {
-  const now = Math.floor(Date.now() / 1000);
+  const now = Date.now();
   
-  // 5초마다만 실행
-  if (now - lastUpdateTime < 5) {
+  // UPDATE_POSITIONS_INTERVAL마다만 실행 (밀리초 단위)
+  if (now - lastUpdateTime < UPDATE_POSITIONS_INTERVAL) {
     return;
   }
   
@@ -185,7 +189,8 @@ async function executeUpdatePositions() {
     const roundInfo = await getCurrentRound();
     if (!roundInfo) return;
     
-    const elapsed = now - roundInfo.startTime;
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const elapsed = nowSeconds - roundInfo.startTime;
     const phase = calculatePhase(elapsed, roundInfo.settled);
     const contractPhase = Number(roundInfo[2]); // 컨트랙트의 실제 phase
     
@@ -203,7 +208,7 @@ async function executeUpdatePositions() {
         console.error(`  ❌ 실패:`, err.message);
       });
       
-      lastUpdateTime = now;
+      lastUpdateTime = Date.now(); // 밀리초 단위로 저장
     } else {
       // 실행 조건이 맞지 않을 때 디버그 정보 출력
       if (elapsed < RACING_PHASE_START) {
@@ -258,9 +263,9 @@ async function executeStartNewRound() {
     const now = Math.floor(Date.now() / 1000);
     const elapsed = now - roundInfo.startTime;
     
-    // 라운드가 끝났고 정산되었을 때만 새 라운드 시작
-    if (elapsed >= ROUND_DURATION && roundInfo.settled) {
-      console.log(`[${new Date().toLocaleTimeString()}] 🎮 startNewRound 호출 (elapsed: ${elapsed}s)`);
+    // 라운드가 90초 이상 지났으면 정산 여부와 관계없이 새 라운드 시작
+    if (elapsed >= ROUND_DURATION) {
+      console.log(`[${new Date().toLocaleTimeString()}] 🎮 startNewRound 호출 (elapsed: ${elapsed}s, settled: ${roundInfo.settled})`);
       const tx = await contract.startNewRound();
       console.log(`  ✅ 트랜잭션 전송: ${tx.hash}`);
       
@@ -271,7 +276,7 @@ async function executeStartNewRound() {
       });
     }
   } catch (error) {
-    // 일반적인 오류만 로그 (이미 새 라운드가 시작되었거나 조건이 맞지 않음)
+    // "Current round not finished" 오류는 무시 (아직 90초가 안 지났거나 이미 새 라운드가 시작됨)
     if (!error.message?.includes('Current round not finished')) {
       console.error('startNewRound 실행 실패:', error.message);
     }

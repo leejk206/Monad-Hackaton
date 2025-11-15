@@ -24,7 +24,7 @@ contract MonadBlitz is AutomationCompatibleInterface {
     
     // SPEED_FORMULA_TODO: 속도 결정식 상수들 - 튜닝 가능하게 분리
     int256 public constant BASE_SPEED = 100; // 기본 속도 (units per second)
-    int256 public constant SPEED_MULTIPLIER = 5000; // 가격 변화율에 대한 속도 배수 (5000배)
+    int256 public constant SPEED_MULTIPLIER = 500000; // 가격 변화율에 대한 속도 배수 (500000배, 기존의 100배)
     
     // ============ Enums ============
     enum Phase { Betting, Racing, Settlement, Finished }
@@ -412,7 +412,7 @@ contract MonadBlitz is AutomationCompatibleInterface {
             return BASE_SPEED;
         }
         
-        // Calculate price change in basis points (1/10000)
+        // Calculate price change in basis points 
         int256 changeBps = ((currentPrice - lastPrice) * 10000) / lastPrice;
         
         // Speed formula: BASE_SPEED + changeBps * SPEED_MULTIPLIER
