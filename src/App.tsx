@@ -8,7 +8,7 @@ import { WinningsPanel } from "./components/WinningsPanel";
 import { useGameState } from "./hooks/useGameState";
 import { useWallet } from "./hooks/useWallet";
 import { getContract, claimWinnings } from "./utils/contract";
-import { TradingViewChart } from "./components/TradingViewChart"; // 🔹 차트 컴포넌트 import
+import { TradingViewChart } from "./components/TradingViewChart";
 import "./App.css";
 
 // TradingView에서 사용할 코인 심볼 목록
@@ -123,8 +123,7 @@ function App() {
           if (errorMsg.includes("Round not settled")) {
             reason = "아직 정산되지 않음";
           } else if (errorMsg.includes("No winning bets")) {
-            reason =
-              "승리한 베팅이 없음 (이미 청구했거나 승리하지 않음)";
+            reason = "승리한 베팅이 없음 (이미 청구했거나 승리하지 않음)";
           } else {
             reason = errorMsg;
           }
@@ -390,7 +389,7 @@ function App() {
       )}
 
       <main className="app-main">
-        {/* 왼쪽: 게임 / 오른쪽: 실제 차트 패널 */}
+        {/* 왼쪽: 타이머 + 레이스 + 차트 / 오른쪽: 베팅 & 상금 패널 (sticky) */}
         <div
           style={{
             display: "flex",
@@ -398,8 +397,8 @@ function App() {
             alignItems: "flex-start",
           }}
         >
-          {/* 게임 영역 */}
-          <div className="game-container" style={{ flex: 1 }}>
+          {/* 왼쪽 게임 영역 */}
+          <div className="game-container" style={{ flex: 2, minWidth: 0 }}>
             <GameTimer
               timeRemaining={gameState.timeRemaining}
               phase={gameState.currentPhase}
@@ -414,7 +413,107 @@ function App() {
               }
             />
 
-            <div className="game-panels">
+            {/* 🔻 레이스 트랙 아래에 넓게 깔리는 차트 패널 */}
+            <section
+              style={{
+                marginTop: "20px",
+                background: "#111827",
+                borderRadius: "16px",
+                padding: "16px",
+                border: "1px solid #1f2937",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+              }}
+            >
+              <h2 style={{ marginBottom: "8px", fontSize: "20px" }}>
+                📈 Live Price Chart
+              </h2>
+              <p
+                style={{
+                  margin: "0 0 12px",
+                  fontSize: "13px",
+                  color: "#9ca3af",
+                }}
+              >
+                실제 시장 차트를 보면서 어느 말(BTC / ETH / LINK / DOGE)에
+                베팅할지 결정해 보세요.
+              </p>
+
+              {/* 코인 탭 버튼 */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "8px",
+                  marginBottom: "12px",
+                  flexWrap: "wrap",
+                }}
+              >
+                {COINS.map((coin) => (
+                  <button
+                    key={coin.symbol}
+                    onClick={() => setSelectedCoin(coin)}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "999px",
+                      border: "1px solid #374151",
+                      background:
+                        selectedCoin.symbol === coin.symbol
+                          ? "#374151"
+                          : "transparent",
+                      color: "#e5e7eb",
+                      fontSize: "13px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {coin.label}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ height: "360px" }}>
+                <TradingViewChart
+                  key={selectedCoin.symbol}
+                  symbol={selectedCoin.symbol}
+                  interval="1" // 1분봉
+                  theme="dark"
+                  height={360}
+                />
+              </div>
+            </section>
+          </div>
+
+          {/* 오른쪽: 베팅 + 상금 패널 (스크롤해도 오른쪽에 고정) */}
+          <aside
+            style={{
+              flex: 1,
+              maxWidth: "420px",
+              minWidth: "340px",
+              position: "sticky",
+              top: 100, // 헤더/상금바 아래에서 고정될 위치
+            }}
+          >
+            <div
+              style={{
+                background: "#111827",
+                borderRadius: "16px",
+                padding: "16px",
+                border: "1px solid #1f2937",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: "20px" }}>💸 Betting</h2>
+              <p
+                style={{
+                  margin: "0 0 8px",
+                  fontSize: "13px",
+                  color: "#9ca3af",
+                }}
+              >
+                현재 라운드에 베팅하거나, 정산 후 상금을 바로 받아가세요.
+              </p>
+
               <BettingPanel
                 phase={gameState.currentPhase}
                 roundInfo={gameState.roundInfo}
@@ -432,76 +531,6 @@ function App() {
                   onClaimed={updateGameState}
                 />
               )}
-            </div>
-          </div>
-
-          {/* 차트 패널 */}
-          <aside
-            style={{
-              flex: 1,
-              minWidth: "380px",
-              maxWidth: "520px",
-              background: "#111827",
-              borderRadius: "16px",
-              padding: "16px",
-              border: "1px solid #1f2937",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-            }}
-          >
-            <h2 style={{ marginBottom: "8px", fontSize: "20px" }}>
-              📈 Live Price Chart
-            </h2>
-            <p
-              style={{
-                margin: "0 0 12px",
-                fontSize: "13px",
-                color: "#9ca3af",
-              }}
-            >
-              실제 시장 차트를 보면서 어느 말(BTC / ETH / LINK / DOGE)에
-              베팅할지 결정해 보세요.
-            </p>
-
-            {/* 코인 탭 버튼 */}
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-                marginBottom: "12px",
-                flexWrap: "wrap",
-              }}
-            >
-              {COINS.map((coin) => (
-                <button
-                  key={coin.symbol}
-                  onClick={() => setSelectedCoin(coin)}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: "999px",
-                    border: "1px solid #374151",
-                    background:
-                      selectedCoin.symbol === coin.symbol
-                        ? "#374151"
-                        : "transparent",
-                    color: "#e5e7eb",
-                    fontSize: "13px",
-                    cursor: "pointer",
-                  }}
-                >
-                  {coin.label}
-                </button>
-              ))}
-            </div>
-
-            {/* TradingView 차트 */}
-            <div style={{ height: "360px" }}>
-              <TradingViewChart
-                key={selectedCoin.symbol} // 심볼 바뀔 때마다 위젯 리마운트
-                symbol={selectedCoin.symbol}
-                interval="1" // 1분봉
-                theme="dark"
-                height={360}
-              />
             </div>
           </aside>
         </div>
