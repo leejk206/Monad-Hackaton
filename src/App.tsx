@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { WalletButton } from "./components/WalletButton";
 import { GameTimer } from "./components/GameTimer";
 import { RaceTrack } from "./components/RaceTrack";
@@ -112,6 +112,7 @@ function App() {
           <div className="game-panels">
             <BettingPanel
               phase={gameState.currentPhase}
+              roundInfo={gameState.roundInfo}
               totalBets={gameState.totalBets}
               userBets={gameState.userBets}
               onBetPlaced={updateGameState}

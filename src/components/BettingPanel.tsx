@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { ethers } from "ethers";
-import { HORSES, MIN_BET_AMOUNT, MAX_BET_AMOUNT } from "../config";
-import { Phase } from "../types";
+import { HORSES, MIN_BET_AMOUNT, MAX_BET_AMOUNT, BETTING_PHASE_END } from "../config";
+import { Phase, RoundInfo } from "../types";
 import { getContract, placeBet } from "../utils/contract";
 import { useWallet } from "../hooks/useWallet";
 
 interface BettingPanelProps {
   phase: Phase;
+  roundInfo: RoundInfo | null;
   totalBets: bigint[];
   userBets: any[];
   onBetPlaced: () => void;
@@ -14,6 +15,7 @@ interface BettingPanelProps {
 
 export function BettingPanel({
   phase,
+  roundInfo,
   totalBets,
   userBets,
   onBetPlaced,
@@ -23,10 +25,15 @@ export function BettingPanel({
   const [betAmount, setBetAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
-  const canBet = phase === Phase.Betting && connected;
+  // 실제 베팅 가능 여부 계산: Phase가 Betting이고, elapsed <= 35초여야 함
+  const now = Math.floor(Date.now() / 1000);
+  const elapsed = roundInfo ? now - Number(roundInfo.startTime) : 999;
+  const isBettingPhaseActive = elapsed <= BETTING_PHASE_END;
+  const canBet = phase === Phase.Betting && connected && isBettingPhaseActive;
 
   const handleBet = async () => {
-    if (!signer || !selectedHorse || !betAmount) return;
+    // selectedHorse가 0일 수 있으므로 null 체크를 명시적으로 해야 함
+    if (!signer || selectedHorse === null || !betAmount) return;
 
     const amount = parseFloat(betAmount);
     if (amount < MIN_BET_AMOUNT || amount > MAX_BET_AMOUNT) {
@@ -65,6 +72,11 @@ export function BettingPanel({
       {phase !== Phase.Betting && (
         <div className="betting-warning">
           현재 베팅 단계가 아닙니다.
+        </div>
+      )}
+      {phase === Phase.Betting && !isBettingPhaseActive && (
+        <div className="betting-warning">
+          베팅 시간이 종료되었습니다. (경과: {elapsed}초 / 제한: {BETTING_PHASE_END}초)
         </div>
       )}
 
